@@ -26,7 +26,7 @@ final class Run
     }
 
     /**
-     * Collect inventory, optionally narrowing it to the VDC, LAN and NAT gateway synchronization endpoints.
+     * Collect inventory, optionally narrowing it to the endpoints used for synchronization.
      * @param array<string,mixed> $config Inventory configuration shared by both entry points.
      * @return array<string,mixed> Snapshot including selection and completeness evidence.
      */
@@ -60,7 +60,8 @@ final class Run
         }
         if ($syncOnly) {
             $compute = $products['compute'] ?? [];
-            $paths = ['/datacenters', '/datacenters/{datacenterId}/lans', '/datacenters/{datacenterId}/natgateways'];
+            $paths = ['/datacenters', '/datacenters/{datacenterId}/lans', '/datacenters/{datacenterId}/natgateways',
+                '/datacenters/{datacenterId}/networkloadbalancers'];
             if (count($compute['bases'] ?? []) !== 1 || array_diff($paths, array_keys($compute['resources'] ?? []))) {
                 throw new InventoryError('vdc_endpoint_outside_selection');
             }

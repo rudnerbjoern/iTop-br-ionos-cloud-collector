@@ -71,6 +71,25 @@ host, and removing an assignment preserves its IPAM object. The technical
 assignment. If someone selects a different host, that assignment stays in the
 CMDB. A subsequent observation of the original host can create its own assignment.
 
+## Network load balancer reconciliation
+
+The existing Compute API collection supplies the network load balancer UUID,
+name, LAN roles and host lists. Both LAN IDs must resolve within the owning
+VDC and customer before the collector applies load balancer changes.
+
+| iTop class                                | Identity within this import  | Source fields                           |
+| ----------------------------------------- | ---------------------------- | --------------------------------------- |
+| `CloudNetworkLoadBalancer`                | Cloud and load balancer UUID | `name`, `listenerLan`, `targetLan`      |
+| `CloudNetworkLoadBalancerListenerAddress` | Load balancer and host       | `ips[]`                                 |
+| `CloudNetworkLoadBalancerBackendAddress`  | Load balancer and host       | `lbPrivateIps[]` host and prefix length |
+
+Explicit empty lists authorize withdrawal of this source's assignments.
+Missing lists, incomplete coverage and invalid addresses stop reconciliation.
+The same scoped ownership and address lookup rules as NAT apply, with
+private listener hosts scoped by the listener LAN's visibility. With the
+bridge, withdrawing an assignment preserves its TeemIP address. Forwarding
+rules and their target servers remain separate inventory observations.
+
 ## Native iTop and TeemIP mappings
 
 The base data model requires the iTop 3.3 virtualization and container modules. The optional bridge links Clouds to existing blocks and subnets when the generic cloud module and TeemIP IP Management are installed. The IONOS allocation import also requires TeemIP IPv6 Management. Other TeemIP mappings depend on the corresponding IP management and interface modules in the target installation. Review the installed model before defining source mappings. [iTop virtualization][virtual] · [iTop containers][containers] · [TeemIP descriptor][teemip]
@@ -81,7 +100,7 @@ The base data model requires the iTop 3.3 virtualization and container modules. 
 - **Server → `VirtualMachine`.** Its required `virtualhost_id` can point directly to the VDC's `Cloud`. Preserve provider identity across renames. Populate comparable CPU and memory values using documented units. **NIC → `LogicalInterface`** requires `virtualmachine_id`. The TeemIP adapter supplies interface integration. [Virtualization model][virtual] · [TeemIP virtualization adapter][adapter]
 - **LAN → `CloudLan`.** Resolve `cloud_id` within the IONOS provider using the VDC UUID. Reconcile on the resulting Cloud and the local LAN `provider_resource_id`. Use the customer organization of the parent Cloud. The native `VLAN` class requires `vlan_tag` and `org_id`. A provider's LAN number alone does not prove the network's IEEE 802.1Q tag. A native `VLAN` can be linked after an explicit, validated mapping. [Configuration management model][core]
 - **Storage.** `LogicalVolume` requires `name`, `lun_id` and `storagesystem_id`. The Cloud API volume ID and capacity alone do not identify a real storage system or LUN. Keep an independently observed volume and server attachment until that gap is resolved. `NASFileSystem` requires `name` and `nas_id`. An NFS share is a candidate once the native NAS parent is established. [Storage model][storage]
-- **Network appliances.** `NetworkDevice` with its device type is a native candidate for basic appliance inventory. iTop supplies the Load Balancer type. The NAT gateway import uses the four classes described above. Network and application load balancers expose distinct LAN roles, address lists, rules and target membership in the inventory report. A proposal for extra classes or relationships should describe exactly which business question the native model cannot answer. [Network device model][core] · [Network resource catalog](resource-catalog.md#networking-dns-and-security)
+- **Network appliances.** `NetworkDevice` with its device type is a native candidate for basic appliance inventory. iTop supplies the Load Balancer type. The NAT gateway and network load balancer imports use the classes described above to represent LANs and address assignments. Application load balancers, forwarding rules and their targets remain in the inventory report. [Network device model][core] · [Network resource catalog](resource-catalog.md#networking-dns-and-security)
 
 ### Container classes and relationships
 
@@ -105,7 +124,7 @@ The base data model requires the iTop 3.3 virtualization and container modules. 
 
 ## Evidence required before enabling CMDB writes
 
-Use an isolated iTop 3.3 installation to test the base model on its own and again with TeemIP to test the optional relationships. Use synthetic provider records to exercise duplicate names, identity across renames, overlapping private addresses, missing container fields and a page failure after a successful page. A write-capable adapter needs a source definition, organization resolution, stable external keys, field policies and a tested retirement policy. The synchronization sources import Clouds and their LANs. The subsequent REST step imports the NAT gateway inventory. Other resource families remain local inventory.
+Use an isolated iTop 3.3 installation to test the base model on its own and again with TeemIP to test the optional relationships. Use synthetic provider records to exercise duplicate names, identity across renames, overlapping private addresses, missing container fields and a page failure after a successful page. A write-capable adapter needs a source definition, organization resolution, stable external keys, field policies and a tested retirement policy. The synchronization sources import Clouds and their LANs. The subsequent REST step imports NAT gateways and network load balancers. Other resource families remain local inventory.
 
 [base]: https://github.com/Combodo/itop-data-collector-base/blob/1.5.1/exec.php
 [azure]: https://github.com/Combodo/itop-data-collector-ms-azure/blob/master/main.php

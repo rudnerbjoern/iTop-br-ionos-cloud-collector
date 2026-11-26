@@ -253,9 +253,10 @@ final class Inventory
             'ipv4CidrBlock','dhcp','cpuArchitecture','minNodeCount','maxNodeCount','nodeCount','region'];
         $attrs = [];
         $isNatGateway = str_ends_with($path, '/natgateways');
+        $propertiesOnly = $isNatGateway || str_ends_with($path, '/networkloadbalancers');
         foreach ($keys as $key) {
-            // NAT reconciliation treats only fields observed in the provider's properties as authoritative.
-            $value = $properties[$key] ?? ($isNatGateway ? null : ($item[$key] ?? null));
+            // Network reconciliation uses the provider's properties as its authoritative fields.
+            $value = $properties[$key] ?? ($propertiesOnly ? null : ($item[$key] ?? null));
             if (is_scalar($value) || (is_array($value) && array_is_list($value)
                 && count(array_filter($value,'is_scalar')) === count($value))) {
                 $attrs[$key] = $value;

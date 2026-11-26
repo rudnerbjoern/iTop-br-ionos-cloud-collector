@@ -33,7 +33,8 @@ final class VdcChildScopes
         $noParents = false;
         foreach (array_slice($report['scopes'], 1) as $scope) {
             if (($scope['complete'] ?? null) !== true || ($scope['product'] ?? null) !== 'compute'
-                || !in_array($scope['template'] ?? null, ['/datacenters/{datacenterId}/lans', '/datacenters/{datacenterId}/natgateways'], true)) {
+                || !in_array($scope['template'] ?? null, ['/datacenters/{datacenterId}/lans',
+                    '/datacenters/{datacenterId}/natgateways', '/datacenters/{datacenterId}/networkloadbalancers'], true)) {
                 throw new RuntimeException('Unexpected or incomplete VDC child collection.');
             }
             if ($scope['template'] !== $template) {

@@ -34,7 +34,7 @@ final class VdcMappingTest extends TestCase
     ];
 
     /** @return array<string,mixed> A single native module installation record. */
-    private static function module(string $name, string $version = '0.1.0'): array
+    private static function module(string $name, string $version = '0.2.0'): array
     {
         return ['code' => 0, 'class' => 'ModuleInstallation', 'fields' => [
             'name' => $name, 'version' => $version, 'installed' => '2026-11-26 07:15:00',
@@ -79,9 +79,9 @@ final class VdcMappingTest extends TestCase
         yield 'failed request' => [['code' => 1]];
         yield 'only bridge installed' => [['code' => 0, 'objects' => [$bridge]]];
         yield 'missing provider module' => [['code' => 0, 'objects' => [$base, $bridge]]];
-        yield 'obsolete provider module' => [['code' => 0, 'objects' => [$base, self::module(self::IONOS, '0.0.9')]]];
-        yield 'obsolete base module' => [['code' => 0, 'objects' => [self::module(self::BASE, '0.0.9'), $ionos]]];
-        yield 'obsolete bridge' => [['code' => 0, 'objects' => [$base, $ionos, self::module(self::BRIDGE, '0.0.9')]]];
+        yield 'obsolete provider module' => [['code' => 0, 'objects' => [$base, self::module(self::IONOS, '0.1.0')]]];
+        yield 'obsolete base module' => [['code' => 0, 'objects' => [self::module(self::BASE, '0.1.0'), $ionos]]];
+        yield 'obsolete bridge' => [['code' => 0, 'objects' => [$base, $ionos, self::module(self::BRIDGE, '0.1.0')]]];
         yield 'missing base module' => [['code' => 0, 'objects' => [$ionos]]];
         yield 'duplicate base module' => [['code' => 0, 'objects' => [$base, $base, $ionos]]];
     }

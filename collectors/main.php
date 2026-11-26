@@ -79,6 +79,8 @@ require_once __DIR__ . '/src/LinkRestClient.php';
 require_once __DIR__ . '/src/NatInventory.php';
 require_once __DIR__ . '/src/NatSync.php';
 require_once __DIR__ . '/src/NatIpResolver.php';
+require_once __DIR__ . '/src/NlbInventory.php';
+require_once __DIR__ . '/src/NlbSync.php';
 
 $org = filter_var(Utils::GetConfigurationValue('ionos_org_id'), FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
 $provider = filter_var(Utils::GetConfigurationValue('ionos_provider_id'), FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
@@ -108,23 +110,33 @@ if ($contract !== '' && !ctype_digit($contract)) {
 }
 $sourceScope = "org $org - provider $provider" . ($contract === '' ? '' : " - contract $contract");
 $vdcs = $lans = [];
-$syncLinks = $syncNatIpv4 = $syncNatIpv6 = $syncNat = null;
+$syncLinks = $syncNatIpv4 = $syncNatIpv6 = $syncNat = $syncNlb = null;
 $resolveCloud = static fn (string $uuid): int => $resolver->cloud($provider, $org, $uuid);
 if (!$configureOnly) {
     $report = Run::read(APPROOT, $config, true);
+    foreach ($report['scopes'] as $scope) {
+        if (!$scope['complete']) {
+            throw new RuntimeException("Incomplete IONOS inventory for {$scope['path']} ({$scope['status']}). Synchronization stopped.");
+        }
+    }
     $vdcs = VdcSync::rows($report, $resolver, $org, $provider);
     $lans = LanSync::rows($report, $vdcs);
     $gateways = NatInventory::gateways($report, $vdcs);
-    $natIps = $capabilities['ipam'] ? new NatIpResolver($client->Get(...), $client->Create(...), $capabilities['ipv6']) : null;
-    $natStore = new NatStore($client->Get(...), $client->Create(...), $client->updateNatRecord(...), $client->deleteNatRecord(...));
-    $nat = new NatSync($natStore, "IONOS NAT - $sourceScope", $natIps === null ? null : $natIps->resolve(...));
-    if ($natIps !== null) {
+    $balancers = NlbInventory::loadBalancers($report, $vdcs, $lans);
+    $ipam = $capabilities['ipam'] ? new NatIpResolver($client->Get(...), $client->Create(...), $capabilities['ipv6']) : null;
+    $resolveIp = $ipam === null ? null : $ipam->resolve(...);
+    $store = new InventoryStore($client->Get(...), $client->Create(...), $client->updateInventoryRecord(...),
+        $client->deleteInventoryRecord(...));
+    $nat = new NatSync($store, "IONOS NAT - $sourceScope", $resolveIp);
+    $nlb = new NlbSync($store, "IONOS NLB - $sourceScope", $resolveIp);
+    if ($resolveIp !== null) {
         $syncNatIpv4 = static fn () => $nat->prepareAddresses($gateways, $resolveCloud, 4);
         if ($capabilities['ipv6']) {
             $syncNatIpv6 = static fn () => $nat->prepareAddresses($gateways, $resolveCloud, 6);
         }
     }
     $syncNat = static fn () => $nat->apply($gateways, $vdcs, $resolveCloud);
+    $syncNlb = static fn () => $nlb->apply($balancers, $vdcs, $resolveCloud);
     if ($capabilities['ipam'] && $capabilities['ipv6']) {
         $allocations = VdcSync::ipv6Allocations($report['scopes'][0]['items'], $resolver, $org);
         $links = new CloudIpLinkSync($client->Get(...), $client->Create(...), $client->deleteLink(...));
@@ -137,6 +149,7 @@ require_once __DIR__ . '/src/IonosCollectionPlan.php';
 NatIpv4Collector::setOperation($syncNatIpv4);
 NatIpv6Collector::setOperation($syncNatIpv6);
 NatGatewayCollector::setOperation($syncNat);
+NlbCollector::setOperation($syncNlb);
 IonosCollectionPlan::$useIpam = $capabilities['ipam'];
 IonosCollectionPlan::$useIpv6 = $capabilities['ipv6'];
 Orchestrator::UseCollectionPlan(IonosCollectionPlan::class);

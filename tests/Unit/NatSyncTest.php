@@ -4,16 +4,21 @@ declare(strict_types=1);
 
 namespace BR\IonosCloud\Collector\Tests\Unit;
 
-use BR\IonosCloud\Collector\NatStore;
+use BR\IonosCloud\Collector\InventoryStore;
 use BR\IonosCloud\Collector\NatSync;
+use BR\IonosCloud\Collector\NlbInventory;
+use BR\IonosCloud\Collector\NlbSync;
 use BR\IonosCloud\Collector\Tests\Support\RestResponse;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 
 require_once __DIR__ . '/../../collectors/src/NatSync.php';
+require_once __DIR__ . '/../../collectors/src/NlbInventory.php';
+require_once __DIR__ . '/../../collectors/src/NlbSync.php';
 require_once __DIR__ . '/../Support/RestResponse.php';
 
-/** Verify scoped NAT reconciliation against an in-memory REST target, including retries and manual edits. */
+/** Verify network reconciliation against an in-memory REST target, including retries and manual edits. */
 final class NatSyncTest extends TestCase
 {
     private const GATEWAY = 'CloudNatGateway';
@@ -168,7 +173,7 @@ final class NatSyncTest extends TestCase
         $gateways = self::GATEWAYS;
         $gateways[0]['public_ips'][] = '2001:db8::1';
         $gateways[0]['lans'][0]['addresses'][] = ['address' => 'fd00::2', 'prefix_length' => 64];
-        $store = new NatStore($this->get(...), $this->create(...), $this->update(...), $this->delete(...));
+        $store = new InventoryStore($this->get(...), $this->create(...), $this->update(...), $this->delete(...));
         $hosts = [];
         $resolve = static function (int $org, int $cloud, string $address, ?int $prefix) use (&$hosts): int {
             $hosts[] = $address;
@@ -202,16 +207,97 @@ final class NatSyncTest extends TestCase
     /** An incomplete target list must never be treated as a complete empty inventory. */
     public function testRejectsTruncatedTargetReply(): void
     {
-        $store = new NatStore(static fn () => ['code' => 0, 'message' => 'Found: 2', 'objects' => []],
+        $store = new InventoryStore(static fn () => ['code' => 0, 'message' => 'Found: 2', 'objects' => []],
             $this->create(...), $this->update(...), $this->delete(...));
         $this->expectException(RuntimeException::class);
         $store->rows(self::GATEWAY, ['cloud_id' => 15], ['ionos_source_key']);
     }
 
+    public static function addressModels(): iterable
+    {
+        yield 'standalone' => [false];
+        yield 'TeemIP bridge' => [true];
+    }
+
+    /** Exercise the same inventory and reconciler with either host representation. */
+    #[DataProvider('addressModels')]
+    public function testNlbImportPreservesIdentityAndManualAssignments(bool $bridge): void
+    {
+        $this->bridge = $bridge;
+        $this->records['CloudLan'][6] = ['cloud_id' => 15, 'provider_resource_id' => '2', 'org_id' => 4];
+        $store = new InventoryStore($this->get(...), $this->create(...), $this->update(...), $this->delete(...));
+        $hosts = [];
+        $resolve = static function (int $org, int $cloud, string $host, ?int $prefix, bool $scoped) use (&$hosts): int {
+            self::assertSame([4, 15], [$org, $cloud]);
+            self::assertSame($scoped ? 24 : null, $prefix);
+            self::assertSame(str_starts_with($host, '10.'), $scoped);
+            return $hosts[$host] ??= 100 + count($hosts);
+        };
+        $nlb = new NlbSync($store, 'IONOS NLB - org 4 - provider 9', $bridge ? $resolve : null);
+        $template = '/datacenters/{datacenterId}/networkloadbalancers';
+        $report = ['complete' => true, 'scopes' => [[], [
+            'complete' => true, 'product' => 'compute', 'template' => $template,
+            'path' => '/datacenters/vdc-a/networkloadbalancers', 'status' => 'present', 'items' => [[
+                'id' => 'e1b376ba-5f5d-40bf-a82b-dfb9eefa0561', 'attributes' => [
+                    'name' => 'Original', 'listenerLan' => 2, 'targetLan' => 1,
+                    'ips' => ['203.0.113.10', '203.0.113.11'], 'lbPrivateIps' => ['10.20.0.7/24', '10.20.0.8/24'],
+                ],
+            ]],
+        ]]];
+        $lans = [
+            ['cloud_id' => 'vdc-a', 'provider_resource_id' => '1', 'public' => '0'],
+            ['cloud_id' => 'vdc-a', 'provider_resource_id' => '2', 'public' => '1'],
+        ];
+        $sync = static function () use (&$report, $lans, $nlb): void {
+            $nlb->apply(NlbInventory::loadBalancers($report, self::VDCS, $lans), self::VDCS, static fn () => 15);
+        };
+        $root = 'CloudNetworkLoadBalancer';
+        $listener = $root . 'ListenerAddress';
+        $backend = $root . 'BackendAddress';
+        $sync();
+        $id = array_key_first($this->records[$root]);
+        self::assertSame(6, $this->records[$root][$id]['listener_lan_id']);
+        self::assertSame(5, $this->records[$root][$id]['backend_lan_id']);
+        self::assertSame([24, 24], array_column($this->records[$backend], 'prefix_length'));
+        self::assertCount(2, $this->records[$listener]);
+        $initial = $this->records;
+        $initialHosts = $hosts;
+        $sync();
+        self::assertSame(5, $this->writes);
+        self::assertSame($initial, $this->records);
+        self::assertSame($initialHosts, $hosts);
+        $key = $bridge ? 'ipaddress_id' : 'address';
+        $manual = ['load_balancer_id' => $id, $key => $bridge ? 150 : '10.20.0.12', 'prefix_length' => 28];
+        $this->records[$backend][99] = $manual;
+        $properties = &$report['scopes'][1]['items'][0]['attributes'];
+        $properties['name'] = 'Renamed';
+        $properties['lbPrivateIps'][1] = '10.20.0.9/24';
+        $sync();
+        self::assertSame([$id], array_keys($this->records[$root]));
+        self::assertSame('Renamed', $this->records[$root][$id]['name']);
+        self::assertSame($initial[$listener], $this->records[$listener]);
+        self::assertSame($manual, $this->records[$backend][99]);
+        $backendKeys = $bridge ? [$hosts['10.20.0.7'], 150, $hosts['10.20.0.9']] : ['10.20.0.7', '10.20.0.12', '10.20.0.9'];
+        self::assertSame($backendKeys, array_column($this->records[$backend], $key));
+        self::assertSame([24, 28, 24], array_column($this->records[$backend], 'prefix_length'));
+        if ($bridge) {
+            self::assertSame($initialHosts['10.20.0.8'], $hosts['10.20.0.8']);
+        }
+        $preserved = $this->records;
+        $report['complete'] = false;
+        try {
+            $sync();
+            self::fail('Expected a failed NLB inventory.');
+        } catch (RuntimeException $error) {
+            self::assertStringContainsString('incomplete', $error->getMessage());
+        }
+        self::assertSame($preserved, $this->records);
+    }
+
     /** Apply one observation to the same target across multiple runs. */
     private function runInventory(array $gateways = self::GATEWAYS, array $vdcs = self::VDCS, bool $prepare = true): void
     {
-        $store = new NatStore($this->get(...), $this->create(...), $this->update(...), $this->delete(...));
+        $store = new InventoryStore($this->get(...), $this->create(...), $this->update(...), $this->delete(...));
         $resolve = function (int $org, int $cloud, string $address, ?int $prefix): int {
             ++$this->preparedHosts;
             return match ($address) {

@@ -55,15 +55,15 @@ bases only. It records those bases alongside the product keys.
 
 The template includes the native [Combodo Base parameters](https://github.com/Combodo/itop-data-collector-base/blob/1.5.1/conf/params.distrib.xml).
 The standalone inventory requires only the IONOS settings. The default Base
-command imports virtual datacenters, their LANs and NAT gateways with their addresses.
+command imports virtual datacenters, their LANs, NAT gateways and network load balancers with their addresses.
 
 - `ionos_org_id` — Existing iTop customer organization ID for all VDCs visible to this configuration. Use one configuration and a matching source contract or token per customer.
 - `ionos_provider_id` — Existing iTop provider organization ID for IONOS. Its locations must use the exact API codes, such as `de/txl`.
 - `itop_url` — HTTPS root of the iTop installation, e.g. `https://cmdb.example.org/itop`.
 - `itop_token` or `itop_login` and `itop_password` — iTop credentials. A populated iTop token takes precedence. Keep credentials in the private deployment configuration.
 - `itop_login_mode` — Leave empty for the Base to select `token` or `form` from the credentials.
-- `collectors_launch_sequence` � Base synchronization order. The defaults run VDCs (1), LANs (2),
-  TeemIP IPv4 hosts (7), TeemIP IPv6 hosts (8) and NAT gateway inventory including address assignments (22).
+- `collectors_launch_sequence` — Base synchronization order. The defaults run VDCs (1), LANs (2),
+  TeemIP IPv4 hosts (7), TeemIP IPv6 hosts (8), NAT gateways (22) and network load balancers (23).
   The bridge enables the IP phases automatically, with IPv6 hosts requiring IPv6 management. Each enabled phase requires its parents earlier in the sequence.
 - `synchro_user`, `contact_to_notify` — Login allowed to run synchronization and optional email of an existing iTop contact. With token authentication, specify the login explicitly to assign this user.
 - `max_chunk_size`, `itop_synchro_timeout`, `stop_on_synchro_error` — Rows per batch, request timeout in seconds and whether to stop on synchronization errors. The module defaults are 1,000, 600 and `yes`.
@@ -86,12 +86,12 @@ php exec.php --collect_only
 This command and the standalone script read inventory independently of iTop.
 A partial inventory returns a failure and saves its coverage report.
 
-### Synchronize virtual datacenters, LANs and NAT gateways
+### Synchronize virtual datacenters and network inventory
 
-Install the two model extensions in the target iTop. Both start at version 0.1.0.
+Install both model extensions at version 0.2.0 or later in the target iTop.
 
-- `iTop-br-cloud-datamodel` provides the `br-cloud-datamodel` module, the LAN and NAT gateway classes and the optional TeemIP bridge.
-- `iTop-br-ionos-cloud-datamodel` provides the `br-ionos-cloud-datamodel` module. It adds IONOS-specific access protection, NAT source ownership and optional provider and location samples.
+- `iTop-br-cloud-datamodel` provides the `br-cloud-datamodel` module, the LAN, NAT gateway and network load balancer classes and the optional TeemIP bridge.
+- `iTop-br-ionos-cloud-datamodel` provides the `br-ionos-cloud-datamodel` module. It adds IONOS access protection, network inventory ownership and optional provider and location samples.
 
 The collector checks both modules before configuring either synchronization source.
 Give the service account
@@ -99,7 +99,9 @@ the `REST Services User` profile and permission to read module installations
 and referenced objects, administer both synchronization sources and import Clouds and LANs.
 NAT inventory also requires REST read, create, update and delete access to
 `CloudNatGateway`, `CloudNatGatewayLan`, `CloudNatGatewayLanAddress` and
-`CloudNatGatewayPublicAddress`. The account needs read access to the customer’s
+`CloudNatGatewayPublicAddress`. Network load balancer inventory requires those
+permissions for `CloudNetworkLoadBalancer`, `CloudNetworkLoadBalancerListenerAddress`
+and `CloudNetworkLoadBalancerBackendAddress`. The account needs read access to the customer’s
 Clouds and LANs. With the TeemIP bridge, grant read access to the customer's
 addresses, subnets, blocks and Cloud-to-IP-object links, and create access to
 `IPv4Address` and, when IPv6 management is installed, `IPv6Address`.
@@ -109,13 +111,13 @@ Fill in the iTop credentials and organization IDs in the private parameters.
 The IONOS product and endpoint selection must include the Compute Cloud API v6.
 
 - `php exec.php --configure_only` detects target modules and creates or updates both synchronization sources.
-- `php exec.php` reads the VDC list and each VDC's LAN list. It imports Clouds and LANs through the two data sources, then reconciles their NAT inventory through the iTop REST API.
+- `php exec.php` reads the VDC list and each VDC's LAN, NAT gateway and network load balancer lists. It imports Clouds and LANs through the two data sources, then reconciles their network inventory through the iTop REST API.
 
 The Cloud source matches the IONOS provider and VDC UUID
 (`provider_id` and `provider_resource_id`). It owns the UUID, name, customer, provider, location and additional
 access protection. An absent protection value maps to `unknown`. Existing CIs
 keep their lifecycle and business criticality. A complete empty list leaves
-existing CIs in place. Incomplete VDC, LAN or NAT gateway lists stop the inventory import.
+existing CIs in place. Incomplete VDC, LAN, NAT gateway or network load balancer lists stop the inventory import.
 This collector requires fresh data for this import, so use the default command for
 synchronization. A customer, provider and optional contract identify the source
 independently of the presence of the bridge.
@@ -149,6 +151,20 @@ collector reuses an existing host or creates one in a uniquely matching customer
 subnet. Private addresses require a subnet or its parent block linked to the
 VDC. NAT withdrawal preserves manual assignments and the shared IPAM objects.
 [NAT reconciliation and ownership](docs/design.md#nat-gateway-reconciliation)
+
+### Network load balancer inventory
+
+Open **Network load balancers** on the Cloud. The load balancer shows its
+listener and backend LANs and the host addresses on each LAN. The backend
+list holds the load balancer's own host addresses and their reported prefix
+lengths. Updates preserve the load balancer ID, manual assignments and shared
+TeemIP address objects.
+
+The optional TeemIP bridge resolves private listener and backend hosts in
+the customer's networks associated with the Cloud. Public listener hosts
+resolve in the customer's IP space. Keep `BRIonosNlbCollector` enabled after
+`BRIonosLanCollector` when customizing the launch sequence.
+[Load balancer reconciliation](docs/design.md#network-load-balancer-reconciliation)
 
 ## Development
 

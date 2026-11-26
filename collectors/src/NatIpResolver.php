@@ -10,7 +10,7 @@ use Throwable;
 
 require_once __DIR__ . '/IpFacts.php';
 
-/** Reuse or create a TeemIP host in the address space of the observed NAT endpoint. */
+/** Reuse or create a TeemIP host in the customer's network context. */
 final class NatIpResolver
 {
     private readonly Closure $get;
@@ -25,20 +25,20 @@ final class NatIpResolver
 
     /**
      * Resolve a public host within the organization or a private host within this VDC's linked networks.
-     * The private gateway prefix describes the attachment and is independent of the TeemIP subnet mask.
-     * @param int|null $prefixLength Reported private prefix length, or null for a public IP.
+     * @param int|null $prefixLength Reported prefix length, independent of the TeemIP subnet mask.
+     * @param bool|null $cloudNetwork Scope the lookup to the VDC. NAT callers infer this from prefix presence.
      * @return int Native TeemIP host ID.
      */
-    public function resolve(int $orgId, int $cloudId, string $address, ?int $prefixLength): int
+    public function resolve(int $orgId, int $cloudId, string $address, ?int $prefixLength, ?bool $cloudNetwork = null): int
     {
         $host = IpFacts::parse($address);
         if ($orgId < 1 || $cloudId < 1 || $host === null || $host['prefix'] !== null
             || ($prefixLength !== null && ($prefixLength < 0 || $prefixLength > ($host['family'] === 4 ? 32 : 128)))) {
-            throw new RuntimeException('Invalid scope, host or prefix for a NAT address lookup.');
+            throw new RuntimeException('Invalid scope, host or prefix for an address lookup.');
         }
         $v6 = $host['family'] === 6;
         if ($v6 && !$this->ipv6) {
-            throw new RuntimeException("IPv6 management is required for NAT address $address.");
+            throw new RuntimeException("IPv6 management is required for address $address.");
         }
         $class = $v6 ? 'IPv6Address' : 'IPv4Address';
         $subnet = $v6 ? 'IPv6Subnet' : 'IPv4Subnet';
@@ -48,7 +48,7 @@ final class NatIpResolver
         $scope = "s.org_id = $orgId";
         $query = "SELECT $class AS a";
         $where = "a.org_id = $orgId AND a.$field = '$literal'";
-        if ($prefixLength !== null) {
+        if ($cloudNetwork ?? ($prefixLength !== null)) {
             $scope .= " AND (s.id IN (SELECT IPSubnet AS sn JOIN lnkCloudToIPObject AS ls"
                 . " ON ls.ipobject_id = sn.id WHERE ls.cloud_id = $cloudId)"
                 . " OR s.block_id IN (SELECT IPBlock AS b JOIN lnkCloudToIPObject AS lb"
@@ -67,7 +67,7 @@ final class NatIpResolver
             : "INET_ATON(s.ip) <= INET_ATON('$literal') AND INET_ATON('$literal') <= INET_ATON(s.broadcastip)";
         $parent = $this->one($subnet, "SELECT $subnet AS s WHERE $scope AND $bounds", "org_id,ip,$last", $orgId);
         if ($parent === null) {
-            throw new RuntimeException("No matching $subnet for NAT address $ip in organization $orgId (Cloud $cloudId).");
+            throw new RuntimeException("No matching $subnet for address $ip in organization $orgId (Cloud $cloudId).");
         }
         $firstIp = IpFacts::parse($parent['ip'] ?? null);
         $lastIp = IpFacts::parse($parent[$last] ?? null);
@@ -75,13 +75,13 @@ final class NatIpResolver
             || $firstIp['prefix'] !== null || $lastIp['prefix'] !== null
             || strcmp(inet_pton($ip), inet_pton($firstIp['address'])) < 0
             || strcmp(inet_pton($ip), inet_pton($lastIp['address'])) > 0) {
-            throw new RuntimeException("The returned $subnet does not contain NAT address $ip.");
+            throw new RuntimeException("The returned $subnet does not contain address $ip.");
         }
 
         // Confirm the native object's identity even if another writer won the race or the response was lost.
         try {
             ($this->create)($class, ['org_id' => $orgId, 'subnet_id' => $parent['id'], 'ip' => $ip,
-                'status' => 'allocated'], 'Import a NAT gateway address from IONOS.');
+                'status' => 'allocated'], 'Import an IONOS network address.');
         } catch (Throwable) {
             // An uncertain write may already have committed. Verify by the same scoped lookup before retrying.
         }

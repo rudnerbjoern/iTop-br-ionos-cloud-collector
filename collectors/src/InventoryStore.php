@@ -8,8 +8,8 @@ use Closure;
 use RuntimeException;
 use Throwable;
 
-/** Execute scoped iTop reads and require an unambiguous result for every NAT write. */
-final class NatStore
+/** Execute scoped iTop reads and require an unambiguous result for every inventory write. */
+final class InventoryStore
 {
     /** @param Closure $get Base Get transport. @param Closure $create Base Create transport. */
     public function __construct(
@@ -60,7 +60,7 @@ final class NatStore
      */
     public function insert(string $class, array $fields): int
     {
-        $reply = $this->call($this->create, $class, $fields, 'Record IONOS NAT gateway inventory.');
+        $reply = $this->call($this->create, $class, $fields, 'Record IONOS network inventory.');
         return $this->confirmation($class, $reply);
     }
 
@@ -71,7 +71,7 @@ final class NatStore
      */
     public function change(string $class, array $key, array $changes): void
     {
-        $reply = $this->call($this->update, $class, $key, $changes, 'Update the IONOS NAT gateway inventory.');
+        $reply = $this->call($this->update, $class, $key, $changes, 'Update the IONOS network inventory.');
         if ($this->confirmation($class, $reply) !== $key['id']) {
             throw new RuntimeException("Could not confirm the $class update.");
         }
@@ -108,10 +108,10 @@ final class NatStore
         try {
             $reply = $operation($class, ...$arguments);
         } catch (Throwable) {
-            throw new RuntimeException("The iTop NAT inventory request failed for $class.");
+            throw new RuntimeException("The iTop network inventory request failed for $class.");
         }
         if (!is_array($reply) || ($reply['code'] ?? null) !== 0) {
-            throw new RuntimeException("The iTop NAT inventory request was rejected for $class.");
+            throw new RuntimeException("The iTop network inventory request was rejected for $class.");
         }
         return $reply;
     }
