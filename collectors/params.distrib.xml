@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Packaged defaults. Apply deployment overrides in conf/params.local.xml. -->
+<parameters>
+    <!-- Required IONOS bearer credential: variable name in the process or installation-root .env. -->
+    <ionos_token_env>IONOS_TOKEN</ionos_token_env>
+    <!-- Optional contract number for requests to the global Cloud API v6 only. -->
+    <ionos_contract_number/>
+    <!-- Product keys from collectors/resources.json, e.g. compute,dbaas/psql. -->
+    <ionos_products>all</ionos_products>
+    <!-- All planned API bases, or exact comma-separated URLs from the selected products.
+         For compute alone use https://api.ionos.com/cloudapi/v6. -->
+    <ionos_api_bases>all</ionos_api_bases>
+    <ionos_timeout>20</ionos_timeout>
+    <ionos_page_size>100</ionos_page_size>
+    <ionos_max_pages>500</ionos_max_pages>
+
+    <!-- Positive iTop Organization IDs for the customer and the IONOS provider.
+         Required by VDC and LAN synchronization. Inventory collection uses neither value. -->
+    <ionos_org_id/>
+    <ionos_provider_id/>
+
+    <!-- iTop installation root for synchronization. -->
+    <itop_url/>
+    <!-- Supply an iTop token OR an iTop account and password in the private configuration. -->
+    <itop_token/>
+    <itop_login/>
+    <itop_password/>
+    <!-- Empty selects token authentication when itop_token is set, otherwise form. -->
+    <itop_login_mode/>
+
+    <!-- Use the iTop account login for the synchronization source owner.
+         Empty falls back to itop_login. contact_to_notify is an existing contact's email. -->
+    <synchro_user/>
+    <contact_to_notify/>
+    <max_chunk_size>1000</max_chunk_size>
+    <itop_synchro_timeout>600</itop_synchro_timeout>
+    <stop_on_synchro_error>yes</stop_on_synchro_error>
+    <data_path>%APPROOT%/data</data_path>
+    <date_format>Y-m-d H:i:s</date_format>
+
+    <!-- Base logging: 6 is informational and -1 disables the destination. -->
+    <console_log_level>6</console_log_level>
+    <console_log_dateformat>[Y-m-d H:i:s]</console_log_dateformat>
+    <syslog_log_level>-1</syslog_log_level>
+    <eventissue_log_level>-1</eventissue_log_level>
+    <!-- Base cURL settings for iTop HTTPS. IONOS validates TLS independently. -->
+    <curl_options>
+        <CURLOPT_SSL_VERIFYHOST>2</CURLOPT_SSL_VERIFYHOST>
+        <CURLOPT_SSL_VERIFYPEER>1</CURLOPT_SSL_VERIFYPEER>
+    </curl_options>
+    <!-- The TeemIP host phase runs only on targets with the cloud IPAM bridge. -->
+    <collectors_launch_sequence type="array">
+        <collector>
+            <name>BRIonosVdcCollector</name>
+            <enable>yes</enable>
+            <rank>1</rank>
+        </collector>
+        <collector>
+            <name>BRIonosLanCollector</name>
+            <enable>yes</enable>
+            <rank>2</rank>
+        </collector>
+        <collector>
+            <name>BRIonosNatIpv4Collector</name>
+            <enable>yes</enable>
+            <rank>7</rank>
+        </collector>
+        <collector>
+            <name>BRIonosNatIpv6Collector</name>
+            <enable>yes</enable>
+            <rank>8</rank>
+        </collector>
+        <collector>
+            <name>BRIonosNatGatewayCollector</name>
+            <enable>yes</enable>
+            <rank>22</rank>
+        </collector>
+    </collectors_launch_sequence>
+</parameters>

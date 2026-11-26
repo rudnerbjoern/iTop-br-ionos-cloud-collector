@@ -1,0 +1,13 @@
+{
+    "name": "is4it/br-ionos-cloud-collector",
+    "description": "IONOS Cloud inventory collector for iTop",
+    "type": "project",
+    "license": "GPL-3.0-only",
+    "require-dev": {
+        "ext-simplexml": "*",
+        "phpunit/phpunit": "^12.5"
+    },
+    "scripts": {
+        "test": "@php vendor/bin/phpunit --configuration phpunit.xml.dist"
+    }
+}
