@@ -1,0 +1,617 @@
+{
+  "compute": {
+    "bases": [
+      "https://api.ionos.com/cloudapi/v6"
+    ],
+    "resources": {
+      "/locations": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters": {
+        "offset": true,
+        "depth": 1
+      },
+      "/ipblocks": {
+        "offset": true,
+        "depth": 1
+      },
+      "/snapshots": {
+        "offset": false,
+        "depth": 1
+      },
+      "/backupunits": {
+        "offset": false,
+        "depth": 1
+      },
+      "/templates": {
+        "offset": false,
+        "depth": 1
+      },
+      "/targetgroups": {
+        "offset": true,
+        "depth": 1
+      },
+      "/pccs": {
+        "offset": false,
+        "depth": 1
+      },
+      "/k8s": {
+        "offset": false,
+        "depth": 1
+      },
+      "/images": {
+        "depth": 1,
+        "offset": false
+      },
+      "/k8s/{k8sClusterId}/nodepools": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/servers": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/volumes": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/lans": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/loadbalancers": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/natgateways": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/networkloadbalancers": {
+        "offset": true,
+        "depth": 1,
+        "verifyEmbedded": "networkloadbalancers"
+      },
+      "/datacenters/{datacenterId}/applicationloadbalancers": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/securitygroups": {
+        "offset": true,
+        "depth": 1
+      },
+      "/k8s/{k8sClusterId}/nodepools/{nodepoolId}/nodes": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/servers/{serverId}/volumes": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/servers/{serverId}/cdroms": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/servers/{serverId}/nics": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/servers/{serverId}/gpus": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/loadbalancers/{loadbalancerId}/balancednics": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/natgateways/{natGatewayId}/rules": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/natgateways/{natGatewayId}/flowlogs": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/networkloadbalancers/{networkLoadBalancerId}/forwardingrules": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/networkloadbalancers/{networkLoadBalancerId}/flowlogs": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/applicationloadbalancers/{applicationLoadBalancerId}/forwardingrules": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/applicationloadbalancers/{applicationLoadBalancerId}/flowlogs": {
+        "offset": false,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/securitygroups/{securityGroupId}/rules": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/servers/{serverId}/nics/{nicId}/firewallrules": {
+        "offset": true,
+        "depth": 1
+      },
+      "/datacenters/{datacenterId}/servers/{serverId}/nics/{nicId}/flowlogs": {
+        "offset": true,
+        "depth": 1
+      }
+    }
+  },
+  "apigateway": {
+    "bases": [
+      "https://apigateway.de-txl.ionos.com"
+    ],
+    "resources": {
+      "/gateways": {
+        "offset": true
+      },
+      "/gateways/{apigatewayId}/routes": {
+        "offset": true
+      }
+    }
+  },
+  "cdn": {
+    "bases": [
+      "https://cdn.de-fra.ionos.com"
+    ],
+    "resources": {
+      "/distributions": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/network-services/cdn/distributions/retrieve-all-distributions.md"
+      }
+    }
+  },
+  "cert": {
+    "bases": [
+      "https://certificate-manager.de-fra.ionos.com"
+    ],
+    "resources": {
+      "/certificates": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/network-services/certificate-manager/certificate/retrieve-all-certificate.md"
+      },
+      "/auto-certificates": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/network-services/certificate-manager/auto-certificate/retrieve-all-autocertificate.md"
+      },
+      "/providers": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/network-services/certificate-manager/provider/retrieve-all-provider.md"
+      }
+    }
+  },
+  "containerregistry": {
+    "bases": [
+      "https://api.ionos.com/containerregistries"
+    ],
+    "resources": {
+      "/registries": {
+        "offset": false,
+        "source": "https://docs.ionos.com/cloud/api-reference/containers/private-container-registry/registries/list-all-container-registries.md",
+        "cursor": "pagination.token"
+      },
+      "/registries/{registryId}/repositories": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/containers/private-container-registry/repositories/retrieve-all-repositories.md"
+      },
+      "/registries/{registryId}/artifacts": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/containers/private-container-registry/artifacts/retrieve-all-artifacts-by-registry.md"
+      }
+    }
+  },
+  "dbaas/inmemorydb": {
+    "bases": [
+      "https://in-memory-db.de-fra.ionos.com/v2",
+      "https://in-memory-db.de-txl.ionos.com/v2",
+      "https://in-memory-db.es-vit.ionos.com/v2",
+      "https://in-memory-db.gb-bhx.ionos.com/v2",
+      "https://in-memory-db.gb-lhr.ionos.com/v2",
+      "https://in-memory-db.us-ewr.ionos.com/v2",
+      "https://in-memory-db.us-las.ionos.com/v2",
+      "https://in-memory-db.us-mci.ionos.com/v2",
+      "https://in-memory-db.fr-par.ionos.com/v2"
+    ],
+    "resources": {
+      "/clusters": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2/clusters/retrieve-all-clusters.md"
+      },
+      "/snapshots": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2/snapshots/retrieve-all-snapshots.md"
+      },
+      "/snapshot-locations": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2/snapshot-locations/retrieve-all-snapshotlocations.md"
+      },
+      "/versions": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2/versions/retrieve-all-versions.md"
+      }
+    }
+  },
+  "dbaas/mariadb": {
+    "bases": [
+      "https://mariadb.de-txl.ionos.com/v2",
+      "https://mariadb.de-fra.ionos.com/v2",
+      "https://mariadb.fr-par.ionos.com/v2",
+      "https://mariadb.es-vit.ionos.com/v2",
+      "https://mariadb.gb-lhr.ionos.com/v2",
+      "https://mariadb.gb-bhx.ionos.com/v2",
+      "https://mariadb.us-las.ionos.com/v2",
+      "https://mariadb.us-mci.ionos.com/v2",
+      "https://mariadb.us-ewr.ionos.com/v2"
+    ],
+    "resources": {
+      "/clusters": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-1/clusters/retrieve-all-clusters.md"
+      },
+      "/backups": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-1/backups/retrieve-all-backups.md"
+      },
+      "/backup-locations": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-1/backup-locations/retrieve-all-backuplocations.md"
+      },
+      "/versions": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-1/versions/retrieve-all-versions.md"
+      }
+    }
+  },
+  "dbaas/mongo": {
+    "bases": [
+      "https://mongodb.de-fra.ionos.com/v2",
+      "https://mongodb.es-vit.ionos.com/v2",
+      "https://mongodb.fr-par.ionos.com/v2",
+      "https://mongodb.gb-bhx.ionos.com/v2",
+      "https://mongodb.gb-lhr.ionos.com/v2",
+      "https://mongodb.us-ewr.ionos.com/v2",
+      "https://mongodb.us-mci.ionos.com/v2"
+    ],
+    "resources": {
+      "/clusters": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-2/clusters/retrieve-all-clusters.md"
+      },
+      "/snapshots": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-2/snapshots/retrieve-all-snapshots.md"
+      },
+      "/instance-templates": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-2/instance-templates/retrieve-all-instancetemplates.md"
+      },
+      "/snapshot-locations": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-2/snapshot-locations/retrieve-all-snapshotlocations.md"
+      },
+      "/versions": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/v2-2/versions/retrieve-all-versions.md"
+      }
+    },
+    "regionSource": "https://status.ionos.cloud/incidents/9f7yltcb5zbx"
+  },
+  "dbaas/psql": {
+    "bases": [
+      "https://postgresql.de-txl.ionos.com/v2",
+      "https://postgresql.de-fra.ionos.com/v2",
+      "https://postgresql.fr-par.ionos.com/v2",
+      "https://postgresql.es-vit.ionos.com/v2",
+      "https://postgresql.gb-lhr.ionos.com/v2",
+      "https://postgresql.gb-bhx.ionos.com/v2",
+      "https://postgresql.us-las.ionos.com/v2",
+      "https://postgresql.us-mci.ionos.com/v2",
+      "https://postgresql.us-ewr.ionos.com/v2"
+    ],
+    "resources": {
+      "/clusters": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/postgresql-v2/clusters/retrieve-all-clusters.md"
+      },
+      "/backups": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/postgresql-v2/backups/retrieve-all-backups.md"
+      },
+      "/backup-locations": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/postgresql-v2/backup-locations/retrieve-all-backuplocations.md"
+      },
+      "/versions": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/postgresql-v2/versions/retrieve-all-versions.md"
+      }
+    }
+  },
+  "dns": {
+    "bases": [
+      "https://dns.de-fra.ionos.com"
+    ],
+    "resources": {
+      "/zones": {
+        "offset": true
+      },
+      "/secondaryzones": {
+        "offset": true
+      },
+      "/reverserecords": {
+        "offset": true
+      },
+      "/zones/{zoneId}/records": {
+        "offset": false
+      },
+      "/secondaryzones/{secondaryZoneId}/records": {
+        "offset": true
+      }
+    }
+  },
+  "kafka": {
+    "bases": [
+      "https://kafka.de-txl.ionos.com",
+      "https://kafka.de-fra.ionos.com",
+      "https://kafka.fr-par.ionos.com",
+      "https://kafka.es-vit.ionos.com",
+      "https://kafka.gb-lhr.ionos.com",
+      "https://kafka.gb-bhx.ionos.com",
+      "https://kafka.us-las.ionos.com",
+      "https://kafka.us-mci.ionos.com",
+      "https://kafka.us-ewr.ionos.com"
+    ],
+    "resources": {
+      "/clusters": {
+        "offset": false,
+        "source": "https://docs.ionos.com/cloud/api-reference/data-analytics/event-streams-for-apache-kafka/clusters/retrieve-all-clusters.md"
+      },
+      "/clusters/{clusterId}/topics": {
+        "offset": false,
+        "source": "https://docs.ionos.com/cloud/api-reference/data-analytics/event-streams-for-apache-kafka/topics/retrieve-all-topics.md"
+      }
+    }
+  },
+  "logging": {
+    "bases": [
+      "https://logging.de-fra.ionos.com",
+      "https://logging.de-txl.ionos.com",
+      "https://logging.es-vit.ionos.com",
+      "https://logging.gb-bhx.ionos.com",
+      "https://logging.gb-lhr.ionos.com",
+      "https://logging.fr-par.ionos.com",
+      "https://logging.us-mci.ionos.com",
+      "https://logging.us-ewr.ionos.com",
+      "https://logging.us-las.ionos.com"
+    ],
+    "resources": {
+      "/pipelines": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/observability/logging-service/pipelines/retrieve-all-pipelines.md"
+      }
+    }
+  },
+  "monitoring": {
+    "bases": [
+      "https://monitoring.de-fra.ionos.com",
+      "https://monitoring.de-txl.ionos.com",
+      "https://monitoring.es-vit.ionos.com",
+      "https://monitoring.gb-bhx.ionos.com",
+      "https://monitoring.gb-lhr.ionos.com",
+      "https://monitoring.fr-par.ionos.com",
+      "https://monitoring.us-mci.ionos.com",
+      "https://monitoring.us-ewr.ionos.com",
+      "https://monitoring.us-las.ionos.com"
+    ],
+    "resources": {
+      "/pipelines": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/observability/monitoring-service/pipelines/retrieve-all-pipelines.md"
+      }
+    }
+  },
+  "nfs": {
+    "bases": [
+      "https://nfs.de-fra.ionos.com",
+      "https://nfs.de-txl.ionos.com",
+      "https://nfs.es-vit.ionos.com",
+      "https://nfs.fr-par.ionos.com",
+      "https://nfs.gb-lhr.ionos.com",
+      "https://nfs.us-ewr.ionos.com",
+      "https://nfs.us-las.ionos.com",
+      "https://nfs.us-mci.ionos.com"
+    ],
+    "resources": {
+      "/clusters": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/backup-and-storage/network-file-storage/clusters/retrieve-all-clusters.md"
+      },
+      "/clusters/{clusterId}/shares": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/backup-and-storage/network-file-storage/shares/retrieve-all-shares.md"
+      }
+    }
+  },
+  "objectstoragemanagement": {
+    "bases": [
+      "https://s3.ionos.com"
+    ],
+    "resources": {
+      "/regions": {
+        "offset": true
+      }
+    }
+  },
+  "vmautoscaling": {
+    "bases": [
+      "https://api.ionos.com/autoscaling"
+    ],
+    "resources": {
+      "/groups": {
+        "offset": false,
+        "depth": 1
+      },
+      "/groups/{groupId}/servers": {
+        "offset": false,
+        "depth": 1
+      }
+    }
+  },
+  "vpn": {
+    "bases": [
+      "https://vpn.de-fra.ionos.com",
+      "https://vpn.de-txl.ionos.com",
+      "https://vpn.es-vit.ionos.com",
+      "https://vpn.gb-bhx.ionos.com",
+      "https://vpn.gb-lhr.ionos.com",
+      "https://vpn.us-ewr.ionos.com",
+      "https://vpn.us-las.ionos.com",
+      "https://vpn.us-mci.ionos.com",
+      "https://vpn.fr-par.ionos.com"
+    ],
+    "resources": {
+      "/ipsecgateways": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/network-services/vpn-gateway/ipsec-gateways/retrieve-all-ipsecgateways.md"
+      },
+      "/wireguardgateways": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/network-services/vpn-gateway/wireguard-gateways/retrieve-all-wireguardgateways.md"
+      },
+      "/ipsecgateways/{gatewayId}/tunnels": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/network-services/vpn-gateway/ipsec-tunnels/retrieve-all-ipsectunnels.md"
+      },
+      "/wireguardgateways/{gatewayId}/peers": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/network-services/vpn-gateway/wireguard-peers/retrieve-all-wireguardpeers.md"
+      }
+    }
+  },
+  "ai": {
+    "bases": [
+      "https://openai.inference.de-txl.ionos.com"
+    ],
+    "resources": {
+      "/v1/models": {
+        "offset": false,
+        "items": "data",
+        "source": "https://docs.ionos.com/cloud/api-reference/ai/ai-model-hub/models/list-models.md"
+      }
+    }
+  },
+  "inmemorydb-v1": {
+    "bases": [
+      "https://in-memory-db.de-fra.ionos.com",
+      "https://in-memory-db.de-txl.ionos.com",
+      "https://in-memory-db.es-vit.ionos.com",
+      "https://in-memory-db.gb-bhx.ionos.com",
+      "https://in-memory-db.gb-lhr.ionos.com",
+      "https://in-memory-db.us-ewr.ionos.com",
+      "https://in-memory-db.us-las.ionos.com",
+      "https://in-memory-db.us-mci.ionos.com",
+      "https://in-memory-db.fr-par.ionos.com"
+    ],
+    "resources": {
+      "/replicasets": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/in-memory-db/replica-set/retrieve-all-replicaset.md"
+      },
+      "/snapshots": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/in-memory-db/snapshot/retrieve-all-snapshot.md"
+      },
+      "/snapshots/{snapshotId}/restores": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/in-memory-db/restore/retrieve-all-restore.md"
+      }
+    }
+  },
+  "mariadb-v1": {
+    "bases": [
+      "https://mariadb.de-fra.ionos.com",
+      "https://mariadb.de-txl.ionos.com",
+      "https://mariadb.es-vit.ionos.com",
+      "https://mariadb.fr-par.ionos.com",
+      "https://mariadb.gb-lhr.ionos.com",
+      "https://mariadb.us-ewr.ionos.com",
+      "https://mariadb.us-las.ionos.com",
+      "https://mariadb.us-mci.ionos.com"
+    ],
+    "resources": {
+      "/backups": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/mariadb/backups/list-of-backups.md"
+      },
+      "/clusters": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/mariadb/clusters/list-clusters.md"
+      }
+    }
+  },
+  "mongodb-v1": {
+    "bases": [
+      "https://api.ionos.com/databases/mongodb"
+    ],
+    "resources": {
+      "/clusters": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/mongodb/clusters/get-clusters.md"
+      }
+    }
+  },
+  "postgresql-v1": {
+    "bases": [
+      "https://api.ionos.com/databases/postgresql"
+    ],
+    "resources": {
+      "/clusters": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/postgresql/clusters/list-clusters.md"
+      },
+      "/clusters/{clusterId}/backups": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/postgresql/backups/list-backups-of-cluster.md"
+      },
+      "/clusters/{clusterId}/databases": {
+        "offset": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/databases/postgresql/databases/list-databases.md"
+      }
+    }
+  },
+  "tracing": {
+    "bases": [
+      "https://tracing.de-fra.ionos.com",
+      "https://tracing.de-txl.ionos.com",
+      "https://tracing.es-vit.ionos.com",
+      "https://tracing.gb-bhx.ionos.com",
+      "https://tracing.gb-lhr.ionos.com",
+      "https://tracing.fr-par.ionos.com",
+      "https://tracing.us-mci.ionos.com",
+      "https://tracing.us-ewr.ionos.com",
+      "https://tracing.us-las.ionos.com"
+    ],
+    "resources": {
+      "/pipelines": {
+        "offset": true,
+        "syntheticNext": true,
+        "source": "https://docs.ionos.com/cloud/api-reference/observability/tracing-service/pipelines/retrieve-all-pipelines.md"
+      }
+    }
+  }
+}
