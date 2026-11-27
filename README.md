@@ -5,6 +5,7 @@ with explicit coverage for each product endpoint and parent resource. Synchroniz
 uses the provider-neutral iTop 3.3 cloud model and its IONOS add-on.
 The inventory phase works independently of iTop.
 
+- [Shared cloud inventory architecture](https://github.com/rudnerbjoern/iTop-br-cloud-datamodel/blob/main/docs/architecture/README.md)
 - [Resource catalog and iTop mappings](docs/resource-catalog.md)
 - [Design and synchronization contract](docs/design.md)
 - [Offline checks](tests/README.md) and [Collector Base integration test](tests/base-integration.md)
