@@ -133,7 +133,7 @@ final class Inventory
                         throw new InventoryError('missing_or_repeated_id');
                     }
                     $seen[$id] = true;
-                    $rows[] = self::project((string)$id, $item, $path);
+                    $rows[] = self::project((string)$id, $item, $path, $options['serverSync'] ?? false);
                 }
                 $next = $data['_links']['next'] ?? $data['links']['next'] ?? null;
                 $hasNext = $next !== null && $next !== '' && $next !== false;
@@ -235,7 +235,7 @@ final class Inventory
      * @param array<string,mixed> $item One resource returned by its list operation.
      * @return array{id:string,attributes:array<string,mixed>,ipFacts:list<array>}
      */
-    private static function project(string $id, array $item, string $path): array
+    private static function project(string $id, array $item, string $path, bool $serverSync): array
     {
         $properties = $item['properties'] ?? [];
         if (!is_array($properties)) {
@@ -278,6 +278,11 @@ final class Inventory
             'k8sClusterId','nodePoolId','nodepoolId','privateIps','ipv6CidrBlock','ipv6CidrBlocks',
             'ipv4CidrBlock','dhcp','cpuArchitecture','minNodeCount','maxNodeCount','nodeCount','region'];
         $attrs = [];
+        if ($serverSync) {
+            $attrs = array_intersect_key($properties, array_flip(['name', 'type', 'cores', 'ram']));
+            $attrs = array_map(static fn ($value) => is_scalar($value) || $value === null ? $value : false, $attrs);
+            return ['id' => $id, 'attributes' => $attrs, 'ipFacts' => []];
+        }
         $isNatGateway = str_ends_with($path, '/natgateways');
         $propertiesOnly = $isNatGateway || str_ends_with($path, '/networkloadbalancers');
         foreach ($keys as $key) {

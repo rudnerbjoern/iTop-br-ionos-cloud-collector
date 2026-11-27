@@ -34,10 +34,11 @@ final class VdcMappingTest extends TestCase
     ];
 
     /** @return array<string,mixed> A single native module installation record. */
-    private static function module(string $name, string $version = '0.3.0'): array
+    private static function module(string $name, ?string $version = null): array
     {
         return ['code' => 0, 'class' => 'ModuleInstallation', 'fields' => [
-            'name' => $name, 'version' => $version, 'installed' => '2026-11-26 07:15:00',
+            'name' => $name, 'version' => $version ?? ($name === self::IONOS ? '0.4.0' : '0.3.0'),
+            'installed' => '2026-11-26 07:15:00',
         ]];
     }
 

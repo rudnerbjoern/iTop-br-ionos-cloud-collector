@@ -77,6 +77,7 @@ final class IonosCollectionPlan extends CollectionPlan
             'BRIonosNatGatewayCollector' => NatGatewayCollector::class,
             'BRIonosNlbCollector' => NlbCollector::class,
             'BRIonosVpnCollector' => VpnCollector::class,
+            'BRIonosVmCollector' => VmCollector::class,
         ];
         $dependencies = [
             'BRIonosVdcCollector' => [],
@@ -86,6 +87,7 @@ final class IonosCollectionPlan extends CollectionPlan
             'BRIonosNatGatewayCollector' => ['BRIonosLanCollector'],
             'BRIonosNlbCollector' => ['BRIonosLanCollector'],
             'BRIonosVpnCollector' => ['BRIonosLanCollector'],
+            'BRIonosVmCollector' => ['BRIonosVdcCollector'],
         ];
         if (self::$useIpam) {
             $dependencies['BRIonosNatGatewayCollector'][] = 'BRIonosNatIpv4Collector';

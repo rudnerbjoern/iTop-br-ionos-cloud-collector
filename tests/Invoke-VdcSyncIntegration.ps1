@@ -43,12 +43,12 @@ $extensionCode = Copy-RuntimeBundle $model $cloudBundle
 Copy-Item -LiteralPath "$model/.dev/tests/native.php" -Destination "$inputs/tests"
 Copy-Item -LiteralPath "$PSScriptRoot/vdc-sync.php" -Destination "$inputs/tests/integration.php"
 Copy-Item -LiteralPath "$PSScriptRoot/nat-import.php" -Destination "$inputs/tests/nat-import.php"
-Copy-Item -LiteralPath "$PSScriptRoot/nlb-import.php", "$PSScriptRoot/vpn-import.php" -Destination "$inputs/tests"
+Copy-Item -LiteralPath "$PSScriptRoot/nlb-import.php", "$PSScriptRoot/vpn-import.php", "$PSScriptRoot/vm-import.php" -Destination "$inputs/tests"
 Copy-Item -LiteralPath "$base/core", "$base/exec.php" -Destination "$inputs/base" -Recurse
 Copy-Item -LiteralPath "$base/conf/params.distrib.xml" -Destination "$inputs/base/conf"
 # Only the public runtime is needed. Local parameters, exports and tokens stay outside the fixture.
 Copy-Item -LiteralPath "$collector/collectors/main.php", "$collector/collectors/params.distrib.xml", "$collector/collectors/VdcCollector.json",
-    "$collector/collectors/LanCollector.json",
+    "$collector/collectors/LanCollector.json", "$collector/collectors/VmCollector.json",
     "$collector/collectors/src" -Destination "$inputs/module" -Recurse
 $variants = switch ($Variant) {
     'All' { 'Generic', 'Bare', 'Bridge', 'GenericBridge' }

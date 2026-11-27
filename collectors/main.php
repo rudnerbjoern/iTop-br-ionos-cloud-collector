@@ -82,6 +82,7 @@ require_once __DIR__ . '/src/NatIpResolver.php';
 require_once __DIR__ . '/src/NlbInventory.php';
 require_once __DIR__ . '/src/NlbSync.php';
 require_once __DIR__ . '/src/VpnSync.php';
+require_once __DIR__ . '/src/VmCollector.php';
 
 $org = filter_var(Utils::GetConfigurationValue('ionos_org_id'), FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
 $provider = filter_var(Utils::GetConfigurationValue('ionos_provider_id'), FILTER_VALIDATE_INT, ['options'=>['min_range'=>1]]);
@@ -111,12 +112,14 @@ if ($contract !== '' && !ctype_digit($contract)) {
 }
 $sourceScope = "org $org - provider $provider" . ($contract === '' ? '' : " - contract $contract");
 $vdcs = $lans = [];
+$servers = $serverErrors = [];
 $syncLinks = $syncNatIpv4 = $syncNatIpv6 = $syncNat = $syncNlb = $syncVpn = null;
 $resolveCloud = static fn (string $uuid): int => $resolver->cloud($provider, $org, $uuid);
 if (!$configureOnly) {
     $report = Run::read(APPROOT, $config, true);
     $compute = $report;
-    $compute['scopes'] = array_values(array_filter($report['scopes'], static fn ($scope) => $scope['product'] === 'compute'));
+    $compute['scopes'] = array_values(array_filter($report['scopes'],
+        static fn ($scope) => $scope['product'] === 'compute' && $scope['template'] !== VmInventory::TEMPLATE));
     foreach ($compute['scopes'] as $scope) {
         if (!$scope['complete']) {
             throw new RuntimeException("Incomplete IONOS inventory for {$scope['path']} ({$scope['status']}). Synchronization stopped.");
@@ -124,6 +127,9 @@ if (!$configureOnly) {
     }
     $compute['complete'] = true;
     $vdcs = VdcSync::rows($compute, $resolver, $org, $provider);
+    $servers = VmInventory::scopes($report, $vdcs, static function (string $error) use (&$serverErrors): void {
+        $serverErrors[] = $error;
+    });
     $lans = LanSync::rows($compute, $vdcs);
     $gateways = NatInventory::gateways($compute, $vdcs);
     $balancers = NlbInventory::loadBalancers($compute, $vdcs, $lans);
@@ -154,6 +160,7 @@ if (!$configureOnly) {
 }
 VdcCollector::setContext($vdcs, "IONOS VDCs - $sourceScope", $syncLinks);
 LanCollector::setContext($lans, "IONOS LANs - $sourceScope", $resolveCloud);
+VmCollector::setContext($servers, $serverErrors, "IONOS VMs - $sourceScope", $resolveCloud);
 require_once __DIR__ . '/src/IonosCollectionPlan.php';
 NatIpv4Collector::setOperation($syncNatIpv4);
 NatIpv6Collector::setOperation($syncNatIpv6);

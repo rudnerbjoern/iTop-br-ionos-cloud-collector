@@ -32,6 +32,12 @@ that a gateway survives while a manual assignment still needs it.
 Use `composer test -- --filter Nat` for focused offline checks of NAT
 inventory validation, IP preparation and NAT assignment reconciliation with both models.
 
+The [VM fixture](vm-import.php) exercises the default Base command in `Bare`
+and `Bridge`. It checks scoped placement, native ownership, in-place reservation
+adoption, existing relationships, metrics, both ambiguity directions and
+an incomplete paginated list beside a healthy VDC. It also stages an interrupted
+native import to check that the next run leaves its stale row untouched.
+
 The same [network load balancer fixture](nlb-import.php) runs in the `Bare`
 and `Bridge` variants. It verifies both LAN roles, two listener addresses,
 two backend addresses with prefixes, stable IDs on repeat import, a rename and
