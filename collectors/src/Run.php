@@ -9,6 +9,7 @@ namespace BR\IonosCloud\Collector;
 require_once __DIR__ . '/IonosApi.php';
 require_once __DIR__ . '/Inventory.php';
 require_once __DIR__ . '/Summary.php';
+require_once __DIR__ . '/VmInventory.php';
 
 /** Shared inventory entry point for the standalone PHP CLI and the Combodo collector. */
 final class Run
@@ -61,11 +62,12 @@ final class Run
         if ($syncOnly) {
             $compute = $products['compute'] ?? [];
             $paths = ['/datacenters', '/datacenters/{datacenterId}/lans', '/datacenters/{datacenterId}/natgateways',
-                '/datacenters/{datacenterId}/networkloadbalancers'];
+                '/datacenters/{datacenterId}/networkloadbalancers', VmInventory::TEMPLATE];
             if (count($compute['bases'] ?? []) !== 1 || array_diff($paths, array_keys($compute['resources'] ?? []))) {
                 throw new InventoryError('vdc_endpoint_outside_selection');
             }
             $compute['resources'] = array_intersect_key($compute['resources'], array_flip($paths));
+            $compute['resources'][VmInventory::TEMPLATE]['serverSync'] = true;
             $vpn = $products['vpn'] ?? null;
             $products = ['compute' => $compute];
             if ($vpn !== null) {

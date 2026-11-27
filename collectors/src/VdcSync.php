@@ -42,7 +42,11 @@ final class VdcSync
                 throw new RuntimeException('Ambiguous IONOS module installation records.');
             }
             $version = $object['fields']['version'] ?? '';
-            $minimum = $name === $ipv6 ? '0.1.0' : '0.3.0';
+            $minimum = match ($name) {
+                $ionos => '0.4.0',
+                $ipv6 => '0.1.0',
+                default => '0.3.0',
+            };
             if (!is_string($version) || !preg_match('/^\d+(?:\.\d+)+(?:[-+][0-9A-Za-z.-]+)?$/D', $version)
                 || version_compare($version, $minimum, '<')) {
                 throw new RuntimeException("Incompatible iTop module $name. Version $minimum or later is required.");

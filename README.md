@@ -88,17 +88,20 @@ php exec.php --collect_only
 This command and the standalone script read inventory independently of iTop.
 A partial inventory returns a failure and saves its coverage report.
 
-### Synchronize virtual datacenters and network inventory
+### Synchronize virtual datacenters, virtual machines and network inventory
 
-Install both model extensions at version 0.3.0 or later in the target iTop.
+Install both model extensions in the target iTop.
 
-- `iTop-br-cloud-datamodel` provides the `br-cloud-datamodel` module, the LAN, NAT gateway, VPN gateway and network load balancer classes and the optional TeemIP bridge.
-- `iTop-br-ionos-cloud-datamodel` provides the `br-ionos-cloud-datamodel` module. It adds IONOS access protection, network inventory ownership and optional provider and location samples.
+- `iTop-br-cloud-datamodel` 0.3.0 or later provides the `br-cloud-datamodel` module, the network inventory classes and the optional TeemIP bridge.
+- `iTop-br-ionos-cloud-datamodel` 0.4.0 or later provides the `br-ionos-cloud-datamodel` module. It adds IONOS VM identity, access protection, network inventory ownership and optional provider and location samples.
 
-The collector checks both modules before configuring either synchronization source.
+The collector checks both modules before configuring synchronization sources.
 Give the service account
 the `REST Services User` profile and permission to read module installations
-and referenced objects, administer both synchronization sources and import Clouds and LANs.
+and referenced objects, administer the synchronization sources and import Clouds,
+LANs and VMs. VM reconciliation also needs REST permission to read the native
+`SynchroReplica` records for **all** sources that can own the candidate VMs and
+to read and create native `VirtualMachine` records.
 NAT inventory also requires REST read, create, update and delete access to
 `CloudNatGateway`, `CloudNatGatewayLan`, `CloudNatGatewayLanAddress` and
 `CloudNatGatewayPublicAddress`. Network load balancer inventory requires those
@@ -114,8 +117,8 @@ and to manage individual `lnkCloudToIPObject` records.
 Fill in the iTop credentials and organization IDs in the private parameters.
 The IONOS product and endpoint selection must include the Compute Cloud API v6.
 
-- `php exec.php --configure_only` detects target modules and creates or updates both synchronization sources.
-- `php exec.php` reads the VDC list, each VDC's LAN, NAT gateway and network load balancer lists, and the selected VPN gateway lists. It imports Clouds and LANs through the two data sources, then reconciles their network inventory through the iTop REST API.
+- `php exec.php --configure_only` detects target modules and creates or updates the synchronization sources.
+- `php exec.php` reads the VDC list, each VDC's servers, LANs, NAT gateways and network load balancers, and the selected VPN gateway lists. It synchronizes Clouds, LANs and VMs through native data sources and reconciles network inventory through the iTop REST API.
 
 The Cloud source matches the IONOS provider and VDC UUID
 (`provider_id` and `provider_resource_id`). It owns the UUID, name, customer, provider, location and additional
@@ -140,6 +143,31 @@ The LAN source resolves its parent within the configured provider, then matches
 LAN name, the customer organization of the Cloud and the public flag.
 An unnamed LAN is displayed as `LAN <ID>`. LANs work with both installation variants.
 [Upstream Base](https://github.com/Combodo/itop-data-collector-base/tree/1.5.1)
+
+### Virtual machines and reservations
+
+The collector imports native `VirtualMachine` records under the verified Cloud
+using that Cloud's customer organization. The source namespace, VDC UUID and
+server UUID identify each VM across renames. The VM's **IONOS** section displays
+the provider server type. Reported metrics use the native CPU and RAM fields,
+for example `4` and `2048 MB`. Omitted metrics remain unset on creation and
+retain their last stored values on update.
+
+To reserve a VM, create a native VM with the exact expected name, hosting Cloud
+and customer. Leave its IONOS identity fields empty. A reservation is eligible
+only while no native synchronization source owns it. The import binds a unique
+eligible reservation to the VM source and keeps its iTop ID, relationships and
+unmanaged fields. If no reservation qualifies, the collector creates a VM.
+Conflicting provider identity or either direction of reservation ambiguity is
+reported and the affected VM stays untouched. A failed page leaves its VDC's
+VMs untouched while complete VDCs can still synchronize. An empty list retains
+existing VMs. A run with rejected VM scopes or claims reports failure.
+
+The collector holds the `data_path` lock across the run. Use the same
+`data_path` for processes targeting the same synchronization source. The VM
+source is executed through the collector's combined native import, which
+excludes queued rows from earlier runs. Concurrent changes by other iTop
+writers between the final checks and the import can still invalidate a claim.
 
 ### VPN gateway inventory
 

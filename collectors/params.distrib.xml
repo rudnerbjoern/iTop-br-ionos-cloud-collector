@@ -85,5 +85,10 @@
             <enable>yes</enable>
             <rank>24</rank>
         </collector>
+        <collector>
+            <name>BRIonosVmCollector</name>
+            <enable>yes</enable>
+            <rank>25</rank>
+        </collector>
     </collectors_launch_sequence>
 </parameters>

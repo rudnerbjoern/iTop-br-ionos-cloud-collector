@@ -1,0 +1,88 @@
+{
+    "name": "IONOS Virtual Machines",
+    "description": "Servers from IONOS Cloud.",
+    "status": "production",
+    "user_id": "$synchro_user$",
+    "notify_contact_id": "$contact_to_notify$",
+    "scope_class": "VirtualMachine",
+    "database_table_name": "",
+    "scope_restriction": "",
+    "full_load_periodicity": "0",
+    "reconciliation_policy": "use_primary_key",
+    "action_on_zero": "error",
+    "action_on_one": "update",
+    "action_on_multiple": "error",
+    "delete_policy": "ignore",
+    "delete_policy_update": "",
+    "delete_policy_retention": "0",
+    "attribute_list": [
+        {
+            "attcode": "name",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "finalclass": "SynchroAttribute"
+        },
+        {
+            "attcode": "ionos_vdc_id",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "finalclass": "SynchroAttribute"
+        },
+        {
+            "attcode": "ionos_server_id",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "finalclass": "SynchroAttribute"
+        },
+        {
+            "attcode": "ionos_source_key",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "finalclass": "SynchroAttribute"
+        },
+        {
+            "attcode": "ionos_server_type",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "finalclass": "SynchroAttribute"
+        },
+        {
+            "attcode": "cpu",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "finalclass": "SynchroAttribute"
+        },
+        {
+            "attcode": "ram",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "finalclass": "SynchroAttribute"
+        },
+        {
+            "attcode": "org_id",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "reconciliation_attcode": "",
+            "finalclass": "SynchroAttExtKey"
+        },
+        {
+            "attcode": "virtualhost_id",
+            "update": "1",
+            "reconcile": "0",
+            "update_policy": "master_unlocked",
+            "reconciliation_attcode": "",
+            "finalclass": "SynchroAttExtKey"
+        }
+    ],
+    "user_delete_policy": "everybody",
+    "url_icon": "",
+    "url_application": ""
+}

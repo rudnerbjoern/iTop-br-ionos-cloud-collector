@@ -1,6 +1,6 @@
 # IONOS inventory modeling backlog
 
-Complete **ARC-1, the shared arc42 architecture**, before starting the next modeling issue. Then deliver **VM-1, virtual machines**, **NET-1, network interfaces**, **VOL-1, block volumes**, and **DB-1, managed database services**, in that order. Start DB-1 with MariaDB, followed by PostgreSQL.
+The shared arc42 architecture (ARC-1) and native virtual machines (VM-1) establish the base for **NET-1, network interfaces**, **VOL-1, block volumes**, and **DB-1, managed database services**, in that order. Start DB-1 with MariaDB, followed by PostgreSQL.
 
 ## What is already available
 
@@ -26,8 +26,11 @@ The remaining items below are proposed work. The IDs are stable references for i
 
 ### VM-1 · Virtual machines in their VDC
 
-- **Depends on** the existing VDC import. Read the server list under each VDC. Map a server to native `VirtualMachine` with its VDC as `virtualhost_id` and the VDC's customer organization. Keep its provider ID across renames. Record server type, CPU and memory when reported, with explicit unit conversion.
-- **Accept when** two VDCs containing a server with the same display name show two distinct VMs under the correct parents. Rename one server and repeat the import. Its iTop ID stays the same and the other VM keeps its name. Verify the VM is reachable from its Cloud.
+The [default collector](../README.md#virtual-machines-and-reservations) imports
+native VMs under their Clouds and adopts uniquely matching unowned reservations
+in place. The [installed fixture](../tests/vm-import.php) checks VDC-local identity
+across renames, native ownership, preserved relationships, fields, and partial
+reads in the Bare and Bridge variants.
 
 ### NET-1 · VM interfaces, LAN membership and addresses
 

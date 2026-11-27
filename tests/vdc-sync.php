@@ -129,14 +129,14 @@ function setEndpoint(string $directory, string $path, array $items, int $status 
 
 /** Supply two VDCs so a provider LAN ID may legitimately occur twice. */
 function setPage(string $directory, string $uuid, string $name, bool $protection, int $status = 200,
-    ?string $cidr = '2001:db8:abcd:1200::/56'): void
+    ?string $cidr = '2001:db8:abcd:1200::/56', string $otherName = 'Other VDC'): void
 {
     $item = ['id'=>$uuid, 'type'=>'datacenter', 'metadata'=>['state'=>'BUSY'],
         'properties'=>['name'=>$name, 'description'=>'Fixture VDC', 'location'=>'de/txl',
         'secAuthProtection'=>$protection, 'ipv6CidrBlock'=>$cidr]];
     $other = $item;
     $other['id'] = SECOND_VDC;
-    $other['properties']['name'] = 'Other VDC';
+    $other['properties']['name'] = $otherName;
     $other['properties']['ipv6CidrBlock'] = null;
     setEndpoint($directory, '/datacenters', [$item, $other], $status);
 }
@@ -195,7 +195,8 @@ $listOptions = ['offset' => true, 'depth' => 1];
 $fixturePlan = ['compute'=>['bases'=>['https://127.0.0.1:8443'],
     'resources'=>['/datacenters'=>$listOptions, '/datacenters/{datacenterId}/lans'=>$listOptions,
         '/datacenters/{datacenterId}/natgateways'=>['offset'=>false, 'depth'=>1],
-        '/datacenters/{datacenterId}/networkloadbalancers'=>$listOptions + ['verifyEmbedded' => 'networkloadbalancers']]]];
+        '/datacenters/{datacenterId}/networkloadbalancers'=>$listOptions + ['verifyEmbedded' => 'networkloadbalancers'],
+        '/datacenters/{datacenterId}/servers'=>$listOptions]]];
 $fixturePlan['vpn'] = ['bases' => ['https://vpn.de-txl.localhost:8443'], 'resources' => [
     '/ipsecgateways' => ['offset' => true], '/wireguardgateways' => ['offset' => true],
 ]];
@@ -271,6 +272,8 @@ try {
     setEndpoint($directory, "/datacenters/".SECOND_VDC."/natgateways", []);
     setEndpoint($directory, "/datacenters/$uuid/networkloadbalancers", []);
     setEndpoint($directory, "/datacenters/".SECOND_VDC."/networkloadbalancers", []);
+    setEndpoint($directory, "/datacenters/$uuid/servers", []);
+    setEndpoint($directory, "/datacenters/".SECOND_VDC."/servers", []);
     if ($genericOnly) {
         $sourceSearch = DBObjectSearch::FromOQL('SELECT SynchroDataSource');
         $sourcesBefore = (new DBObjectSet($sourceSearch))->Count();
@@ -429,6 +432,10 @@ try {
     verifyNlbImport($directory, $uuid, (int) $id, (int) $lan->GetKey(), (int) $customer->GetKey(), $bridge);
     require_once __DIR__ . '/vpn-import.php';
     verifyVpnImport($directory, $uuid, (int) $id, (int) $otherCloud->GetKey(), (int) $customer->GetKey(), $bridge);
+    $xml->ionos_page_size = '1';
+    $xml->asXML($configPath);
+    require_once __DIR__ . '/vm-import.php';
+    verifyVmImport($directory, $uuid, (int) $id, (int) $otherCloud->GetKey(), (int) $customer->GetKey(), (int) $provider->GetKey());
     echo 'VDC and LAN synchronization '.($bridge ? 'with' : 'without')." TeemIP: create, rename, scope and partial-read checks passed.\n";
 } finally {
     foreach ([$web, $ionos] as $service) {
