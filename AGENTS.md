@@ -3,6 +3,11 @@
 These instructions apply to every AI agent working in this repository.
 Treat MUST and MUST NOT as mandatory requirements.
 
+## Alpha development
+
+This project is in alpha. Backward compatibility with earlier project versions
+and upgrade paths between project versions are out of scope during alpha.
+
 ## Project identity and scope
 
 This repository owns the external IONOS Cloud inventory collector. Keep runtime files under `collectors/` for Combodo Data Collector Base and exclude credentials and inventory exports from packages.
