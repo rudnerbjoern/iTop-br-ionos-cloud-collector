@@ -241,6 +241,32 @@ final class Inventory
         if (!is_array($properties)) {
             throw new InventoryError('invalid_properties');
         }
+        if ($path === '/ipsecgateways' || $path === '/wireguardgateways') {
+            $keys = ['name','description','gatewayIP','tier','connections'];
+            array_push($keys, ...($path === '/ipsecgateways' ? ['version']
+                : ['listenPort','interfaceIPv4CIDR','interfaceIPv6CIDR']));
+            $attrs = array_intersect_key($properties, array_flip($keys));
+            if (isset($attrs['connections']) && is_array($attrs['connections'])) {
+                $allowed = array_flip(['datacenterId','lanId','ipv4CIDR','ipv6CIDR']);
+                $attrs['connections'] = array_map(static function ($connection) use ($allowed): ?array {
+                    if (!is_array($connection)) {
+                        return null;
+                    }
+                    return array_map(static fn ($value) => is_scalar($value) || $value === null ? $value : false,
+                        array_intersect_key($connection, $allowed));
+                }, $attrs['connections']);
+            } elseif (array_key_exists('connections', $attrs)) {
+                $attrs['connections'] = null;
+            }
+            foreach ($keys as $key) {
+                if ($key !== 'connections' && isset($attrs[$key]) && !is_scalar($attrs[$key])) {
+                    $attrs[$key] = false;
+                }
+            }
+            $status = $item['metadata']['status'] ?? null;
+            $attrs['providerStatus'] = $status === null || is_string($status) ? $status : false;
+            return ['id'=>$id,'attributes'=>$attrs,'ipFacts'=>IpFacts::fromAttributes($attrs)];
+        }
         $keys = ['name','location','type','size','cores','ram','cpuFamily','availabilityZone',
             'vmState','state','version','k8sVersion','storageSize','storageType','instances','public',
             'lan','listenerLan','targetLan','mac','ips','ipv6Ips','publicIps','listenerIp','listenerPort',

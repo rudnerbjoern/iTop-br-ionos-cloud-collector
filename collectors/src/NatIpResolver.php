@@ -31,6 +31,17 @@ final class NatIpResolver
      */
     public function resolve(int $orgId, int $cloudId, string $address, ?int $prefixLength, ?bool $cloudNetwork = null): int
     {
+        return $this->resolveHost($orgId, $cloudId, $address, $prefixLength, $cloudNetwork, true);
+    }
+
+    /** Confirm that the same lookup can resolve a host without changing IPAM. */
+    public function validate(int $orgId, int $cloudId, string $address, ?int $prefixLength, bool $cloudNetwork): void
+    {
+        $this->resolveHost($orgId, $cloudId, $address, $prefixLength, $cloudNetwork, false);
+    }
+
+    private function resolveHost(int $orgId, int $cloudId, string $address, ?int $prefixLength, ?bool $cloudNetwork, bool $create): int
+    {
         $host = IpFacts::parse($address);
         if ($orgId < 1 || $cloudId < 1 || $host === null || $host['prefix'] !== null
             || ($prefixLength !== null && ($prefixLength < 0 || $prefixLength > ($host['family'] === 4 ? 32 : 128)))) {
@@ -76,6 +87,10 @@ final class NatIpResolver
             || strcmp(inet_pton($ip), inet_pton($firstIp['address'])) < 0
             || strcmp(inet_pton($ip), inet_pton($lastIp['address'])) > 0) {
             throw new RuntimeException("The returned $subnet does not contain address $ip.");
+        }
+
+        if (!$create) {
+            return 0;
         }
 
         // Confirm the native object's identity even if another writer won the race or the response was lost.

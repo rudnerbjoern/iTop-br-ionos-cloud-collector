@@ -39,3 +39,30 @@ address replacement, a manual assignment and a denied inventory fetch. The
 bridge variant also checks TeemIP host reuse and retention after withdrawal.
 Use `-Variant Both` to run these two variants alone, or
 `composer test -- --filter Nlb` for offline checks.
+
+The [VPN fixture](vpn-import.php) runs the regional HTTPS lists against the
+installed iTop target in the same two variants. It checks public endpoints,
+LAN-side host and prefix pairs, WireGuard interface addresses, duplicate source
+IDs in different protocols, duplicate LAN IDs in different Clouds, repeat
+imports, a rename and manual ownership. It simulates a second-page failure and
+an unresolved LAN while a complete list for the other protocol reconciles.
+Run `composer test -- --filter Vpn` for focused offline checks.
+
+## NAT model upgrade
+
+The [NAT upgrade fixture](nat-upgrade.php) is opt-in for a disposable runner
+that copies runtime modules into a writable installation. Build a separate
+test package using the pre-VPN generic and IONOS model snapshots and pre-VPN
+collector runtime. Keep the current `vdc-sync.php` and `nat-upgrade.php`
+together in the test package as `integration.php` and `nat-upgrade.php`.
+Include the normal Base and bridge-mode inputs. From the candidate revisions,
+copy the three model module directories and `collectors` into
+`.dev/tests/nat-upgrade-inputs/`. Run the test package in both `Bare` and
+`Bridge`. The fixture imports NAT using the baseline collector, takes an
+ID and ownership snapshot, installs the candidate modules through unattended
+iTop Setup, and checks the snapshot in a new process before and after
+rerunning NAT with the candidate collector.
+
+The standard locally bind-mounted module paths are read-only. Use the
+copy-based test runner for the upgrade fixture so it can replace only the
+disposable installation's module files.

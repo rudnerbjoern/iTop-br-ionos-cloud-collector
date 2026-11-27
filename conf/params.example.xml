@@ -80,5 +80,10 @@
             <enable>yes</enable>
             <rank>23</rank>
         </collector>
+        <collector>
+            <name>BRIonosVpnCollector</name>
+            <enable>yes</enable>
+            <rank>24</rank>
+        </collector>
     </collectors_launch_sequence>
 </parameters>
