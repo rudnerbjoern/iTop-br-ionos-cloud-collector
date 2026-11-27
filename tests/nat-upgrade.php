@@ -76,7 +76,7 @@ function verifyNatUpgrade(string $root, string $directory, string $uuid, int $cl
     }
     // Start the baseline import with complete compute data after the preceding negative tests.
     setPage($directory, $uuid, 'NAT upgrade VDC', false, 200, null);
-    setLan($directory, $uuid, 'Renamed LAN', true);
+    setLan($directory, $uuid, 'Renamed LAN', false);
     setLan($directory, SECOND_VDC, null, true);
     setEndpoint($directory, "/datacenters/".SECOND_VDC."/natgateways", []);
     foreach ([$uuid, SECOND_VDC] as $vdc) {
