@@ -12,7 +12,7 @@ distributed XML and the syntax of collector PHP and JSON files.
 The [Docker integration test](base-integration.md) runs Combodo's actual PHP
 entry point against a local HTTPS fixture.
 
-For an end-to-end VDC, LAN and NAT gateway import using the real Base and disposable iTop 3.3,
+For end-to-end Cloud network imports using the real Base and disposable iTop 3.3,
 run `tests/Invoke-VdcSyncIntegration.ps1 -BasePath <extracted-base-directory>`
 from PowerShell. The runner reads the model extensions from the sibling
 `iTop-br-cloud-datamodel` and `iTop-br-ionos-cloud-datamodel` repositories.
@@ -31,3 +31,11 @@ that a gateway survives while a manual assignment still needs it.
 
 Use `composer test -- --filter Nat` for focused offline checks of NAT
 inventory validation, IP preparation and NAT assignment reconciliation with both models.
+
+The same [network load balancer fixture](nlb-import.php) runs in the `Bare`
+and `Bridge` variants. It verifies both LAN roles, two listener addresses,
+two backend addresses with prefixes, stable IDs on repeat import, a rename and
+address replacement, a manual assignment and a denied inventory fetch. The
+bridge variant also checks TeemIP host reuse and retention after withdrawal.
+Use `-Variant Both` to run these two variants alone, or
+`composer test -- --filter Nlb` for offline checks.

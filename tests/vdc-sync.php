@@ -44,10 +44,18 @@ function serveIonos(string $directory): void
         $url = explode(' ', trim((string) $request))[1] ?? '';
         parse_str(parse_url($url, PHP_URL_QUERY) ?: '', $query);
         $pages = json_decode(file_get_contents("$directory/pages.json"), true, flags: JSON_THROW_ON_ERROR);
-        $response = $pages[parse_url($url, PHP_URL_PATH)] ?? ['status' => 404, 'items' => []];
+        $path = parse_url($url, PHP_URL_PATH);
+        $response = $pages[$path] ?? ['status' => 404, 'items' => []];
+        $embedded = $pages["$path/networkloadbalancers"] ?? null;
+        if ($embedded !== null && ($query['depth'] ?? null) === '2') {
+            $response = ['status' => 200, 'items' => [], 'entities' => ['networkloadbalancers' => [
+                'items' => array_map(static fn ($item) => ['id' => $item['id']], $embedded['items']),
+            ]]];
+        }
         $status = $authenticated ? $response['status'] : 403;
         $rows = ($query['offset'] ?? 0) > 0 ? [] : $response['items'];
-        $body = json_encode(['items' => $rows, 'totalCount' => count($response['items'])], JSON_THROW_ON_ERROR);
+        $body = json_encode(isset($response['entities']) ? ['entities' => $response['entities']]
+            : ['items' => $rows, 'totalCount' => count($response['items'])], JSON_THROW_ON_ERROR);
         fwrite($client, "HTTP/1.1 $status Fixture\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: ".strlen($body)."\r\n\r\n".$body);
         fclose($client);
     }
@@ -179,7 +187,8 @@ verify(proc_close($copy) === 0, 'Could not copy the collector package into the f
 $listOptions = ['offset' => true, 'depth' => 1];
 file_put_contents("$directory/collectors/resources.json", json_encode(['compute'=>['bases'=>['https://127.0.0.1:8443'],
     'resources'=>['/datacenters'=>$listOptions, '/datacenters/{datacenterId}/lans'=>$listOptions,
-        '/datacenters/{datacenterId}/natgateways'=>['offset'=>false, 'depth'=>1]]]], JSON_THROW_ON_ERROR));
+        '/datacenters/{datacenterId}/natgateways'=>['offset'=>false, 'depth'=>1],
+        '/datacenters/{datacenterId}/networkloadbalancers'=>$listOptions + ['verifyEmbedded' => 'networkloadbalancers']]]], JSON_THROW_ON_ERROR));
 $mode = trim(file_get_contents("$inputs/bridge-mode"));
 $genericOnly = in_array($mode, ['Generic', 'GenericBridge'], true);
 $modules = GetModulesInfo();
@@ -248,6 +257,8 @@ try {
     setLan($directory, SECOND_VDC, null, true);
     setEndpoint($directory, "/datacenters/$uuid/natgateways", []);
     setEndpoint($directory, "/datacenters/".SECOND_VDC."/natgateways", []);
+    setEndpoint($directory, "/datacenters/$uuid/networkloadbalancers", []);
+    setEndpoint($directory, "/datacenters/".SECOND_VDC."/networkloadbalancers", []);
     if ($genericOnly) {
         $sourceSearch = DBObjectSearch::FromOQL('SELECT SynchroDataSource');
         $sourcesBefore = (new DBObjectSet($sourceSearch))->Count();
@@ -397,6 +408,8 @@ try {
         verify(ipLinks((int) $id) === $manual, 'A matching manual link must never become importer-owned.');
     }
     verifyNatImport($directory, $uuid, (int) $id, (int) $lan->GetKey(), (int) $customer->GetKey(), $bridge);
+    require_once __DIR__ . '/nlb-import.php';
+    verifyNlbImport($directory, $uuid, (int) $id, (int) $lan->GetKey(), (int) $customer->GetKey(), $bridge);
     echo 'VDC and LAN synchronization '.($bridge ? 'with' : 'without')." TeemIP: create, rename, scope and partial-read checks passed.\n";
 } finally {
     foreach ([$web, $ionos] as $service) {

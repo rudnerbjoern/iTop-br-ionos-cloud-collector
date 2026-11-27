@@ -11,7 +11,7 @@ use Orchestrator;
 use RuntimeException;
 
 /** Run a REST reconciliation step on the validated snapshot in the Base synchronization pass. */
-abstract class NatPhaseCollector extends Collector
+abstract class InventoryPhaseCollector extends Collector
 {
     /** @var array<class-string,?Closure> Per-phase operations for this execution. */
     private static array $operations = [];
@@ -28,26 +28,29 @@ abstract class NatPhaseCollector extends Collector
     /** This phase writes through the same native REST connection as the VDC link import. */
     public function InitSynchroDataSource($aPlaceholders): bool { return true; }
 
-    /** The complete NAT inventory was collected before orchestration. */
+    /** The complete network inventory was collected before orchestration. */
     public function Collect($iMaxChunkSize = 0): bool { return true; }
 
     /** Run the configured operation and propagate failures to the Base entry point. */
     public function Synchronize($iMaxChunkSize = 0): bool
     {
-        $operation = self::$operations[static::class] ?? throw new RuntimeException('Missing NAT synchronization context.');
+        $operation = self::$operations[static::class] ?? throw new RuntimeException('Missing network synchronization context.');
         $operation();
         return true;
     }
 }
 
 /** Prepare IPv4 host objects in TeemIP before NAT assignments are imported. */
-final class NatIpv4Collector extends NatPhaseCollector {}
+final class NatIpv4Collector extends InventoryPhaseCollector {}
 
 /** Prepare IPv6 host objects when the target also has IPv6 management installed. */
-final class NatIpv6Collector extends NatPhaseCollector {}
+final class NatIpv6Collector extends InventoryPhaseCollector {}
 
 /** Import gateways, LAN attachments and assignments once their prerequisites exist. */
-final class NatGatewayCollector extends NatPhaseCollector {}
+final class NatGatewayCollector extends InventoryPhaseCollector {}
+
+/** Import network load balancers after their Cloud and LANs are available. */
+final class NlbCollector extends InventoryPhaseCollector {}
 
 /** Use the Base sequence sorter and enforce the dependencies of each enabled IONOS phase. */
 final class IonosCollectionPlan extends CollectionPlan
@@ -67,6 +70,7 @@ final class IonosCollectionPlan extends CollectionPlan
             'BRIonosNatIpv4Collector' => NatIpv4Collector::class,
             'BRIonosNatIpv6Collector' => NatIpv6Collector::class,
             'BRIonosNatGatewayCollector' => NatGatewayCollector::class,
+            'BRIonosNlbCollector' => NlbCollector::class,
         ];
         $dependencies = [
             'BRIonosVdcCollector' => [],
@@ -74,6 +78,7 @@ final class IonosCollectionPlan extends CollectionPlan
             'BRIonosNatIpv4Collector' => ['BRIonosVdcCollector'],
             'BRIonosNatIpv6Collector' => ['BRIonosVdcCollector'],
             'BRIonosNatGatewayCollector' => ['BRIonosLanCollector'],
+            'BRIonosNlbCollector' => ['BRIonosLanCollector'],
         ];
         if (self::$useIpam) {
             $dependencies['BRIonosNatGatewayCollector'][] = 'BRIonosNatIpv4Collector';

@@ -75,5 +75,10 @@
             <enable>yes</enable>
             <rank>22</rank>
         </collector>
+        <collector>
+            <name>BRIonosNlbCollector</name>
+            <enable>yes</enable>
+            <rank>23</rank>
+        </collector>
     </collectors_launch_sequence>
 </parameters>

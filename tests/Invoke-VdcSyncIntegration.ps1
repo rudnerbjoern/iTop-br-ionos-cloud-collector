@@ -43,6 +43,7 @@ $extensionCode = Copy-RuntimeBundle $model $cloudBundle
 Copy-Item -LiteralPath "$model/.dev/tests/native.php" -Destination "$inputs/tests"
 Copy-Item -LiteralPath "$PSScriptRoot/vdc-sync.php" -Destination "$inputs/tests/integration.php"
 Copy-Item -LiteralPath "$PSScriptRoot/nat-import.php" -Destination "$inputs/tests/nat-import.php"
+Copy-Item -LiteralPath "$PSScriptRoot/nlb-import.php" -Destination "$inputs/tests/nlb-import.php"
 Copy-Item -LiteralPath "$base/core", "$base/exec.php" -Destination "$inputs/base" -Recurse
 Copy-Item -LiteralPath "$base/conf/params.distrib.xml" -Destination "$inputs/base/conf"
 # Only the public runtime is needed. Local parameters, exports and tokens stay outside the fixture.

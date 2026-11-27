@@ -141,6 +141,20 @@ final class IonosApi
                     || (property_exists($envelope, 'data') && !is_array($envelope->data))) {
                     throw new InventoryError('invalid_response_shape');
                 }
+                if (str_ends_with($path, '/networkloadbalancers')) {
+                    foreach ($envelope->items ?? [] as $item) {
+                        $properties = $item->properties ?? null;
+                        if (!is_object($properties)) {
+                            throw new InventoryError('invalid_load_balancer_properties');
+                        }
+                        foreach (['ips', 'lbPrivateIps'] as $field) {
+                            // Preserve the difference between a JSON object and an authoritative empty array.
+                            if (property_exists($properties, $field) && !is_array($properties->$field)) {
+                                throw new InventoryError('invalid_load_balancer_addresses');
+                            }
+                        }
+                    }
+                }
                 unset($envelope);
                 $json = json_decode($body, true, 256, JSON_THROW_ON_ERROR);
             } catch (\JsonException) {
