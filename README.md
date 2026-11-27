@@ -56,7 +56,7 @@ bases only. It records those bases alongside the product keys.
 
 The template includes the native [Combodo Base parameters](https://github.com/Combodo/itop-data-collector-base/blob/1.5.1/conf/params.distrib.xml).
 The standalone inventory requires only the IONOS settings. The default Base
-command imports virtual datacenters, their LANs, NAT gateways and network load balancers with their addresses.
+command imports virtual datacenters, their LANs, NAT and VPN gateways, and network load balancers with their addresses.
 
 - `ionos_org_id` — Existing iTop customer organization ID for all VDCs visible to this configuration. Use one configuration and a matching source contract or token per customer.
 - `ionos_provider_id` — Existing iTop provider organization ID for IONOS. Its locations must use the exact API codes, such as `de/txl`.
@@ -64,7 +64,7 @@ command imports virtual datacenters, their LANs, NAT gateways and network load b
 - `itop_token` or `itop_login` and `itop_password` — iTop credentials. A populated iTop token takes precedence. Keep credentials in the private deployment configuration.
 - `itop_login_mode` — Leave empty for the Base to select `token` or `form` from the credentials.
 - `collectors_launch_sequence` — Base synchronization order. The defaults run VDCs (1), LANs (2),
-  TeemIP IPv4 hosts (7), TeemIP IPv6 hosts (8), NAT gateways (22) and network load balancers (23).
+  TeemIP IPv4 hosts (7), TeemIP IPv6 hosts (8), NAT gateways (22), network load balancers (23) and VPN gateways (24).
   The bridge enables the IP phases automatically, with IPv6 hosts requiring IPv6 management. Each enabled phase requires its parents earlier in the sequence.
 - `synchro_user`, `contact_to_notify` — Login allowed to run synchronization and optional email of an existing iTop contact. With token authentication, specify the login explicitly to assign this user.
 - `max_chunk_size`, `itop_synchro_timeout`, `stop_on_synchro_error` — Rows per batch, request timeout in seconds and whether to stop on synchronization errors. The module defaults are 1,000, 600 and `yes`.
@@ -89,9 +89,9 @@ A partial inventory returns a failure and saves its coverage report.
 
 ### Synchronize virtual datacenters and network inventory
 
-Install both model extensions at version 0.2.0 or later in the target iTop.
+Install both model extensions at version 0.3.0 or later in the target iTop.
 
-- `iTop-br-cloud-datamodel` provides the `br-cloud-datamodel` module, the LAN, NAT gateway and network load balancer classes and the optional TeemIP bridge.
+- `iTop-br-cloud-datamodel` provides the `br-cloud-datamodel` module, the LAN, NAT gateway, VPN gateway and network load balancer classes and the optional TeemIP bridge.
 - `iTop-br-ionos-cloud-datamodel` provides the `br-ionos-cloud-datamodel` module. It adds IONOS access protection, network inventory ownership and optional provider and location samples.
 
 The collector checks both modules before configuring either synchronization source.
@@ -102,7 +102,9 @@ NAT inventory also requires REST read, create, update and delete access to
 `CloudNatGateway`, `CloudNatGatewayLan`, `CloudNatGatewayLanAddress` and
 `CloudNatGatewayPublicAddress`. Network load balancer inventory requires those
 permissions for `CloudNetworkLoadBalancer`, `CloudNetworkLoadBalancerListenerAddress`
-and `CloudNetworkLoadBalancerBackendAddress`. The account needs read access to the customer’s
+and `CloudNetworkLoadBalancerBackendAddress`. VPN inventory requires those permissions for
+`CloudVpnGateway`, `CloudVpnGatewayLan`, `CloudVpnGatewayLanAddress` and
+`CloudVpnGatewayInterfaceAddress`. The account needs read access to the customer’s
 Clouds and LANs. With the TeemIP bridge, grant read access to the customer's
 addresses, subnets, blocks and Cloud-to-IP-object links, and create access to
 `IPv4Address` and, when IPv6 management is installed, `IPv6Address`.
@@ -112,7 +114,7 @@ Fill in the iTop credentials and organization IDs in the private parameters.
 The IONOS product and endpoint selection must include the Compute Cloud API v6.
 
 - `php exec.php --configure_only` detects target modules and creates or updates both synchronization sources.
-- `php exec.php` reads the VDC list and each VDC's LAN, NAT gateway and network load balancer lists. It imports Clouds and LANs through the two data sources, then reconciles their network inventory through the iTop REST API.
+- `php exec.php` reads the VDC list, each VDC's LAN, NAT gateway and network load balancer lists, and the selected VPN gateway lists. It imports Clouds and LANs through the two data sources, then reconciles their network inventory through the iTop REST API.
 
 The Cloud source matches the IONOS provider and VDC UUID
 (`provider_id` and `provider_resource_id`). It owns the UUID, name, customer, provider, location and additional
@@ -137,6 +139,27 @@ The LAN source resolves its parent within the configured provider, then matches
 LAN name, the customer organization of the Cloud and the public flag.
 An unnamed LAN is displayed as `LAN <ID>`. LANs work with both installation variants.
 [Upstream Base](https://github.com/Combodo/itop-data-collector-base/tree/1.5.1)
+
+### VPN gateway inventory
+
+VPN synchronization uses only the IPsec and WireGuard gateway lists from
+selected regional VPN bases. Keep `ionos_products=compute` for compute-only
+synchronization. Select `compute,vpn` to include VPN, and use
+`ionos_api_bases` to restrict the regions. Keep each credential's organization,
+provider and optional contract settings stable, and use distinct settings for
+different VPN accounts.
+
+The parent Cloud tab shows imported VPN gateways. Gateway details show the
+public IPv4 endpoint, protocol and connected LANs. Each LAN attachment has
+its own host addresses and prefixes. WireGuard interface addresses appear
+separately. With TeemIP, link the private LAN and interface networks to the
+Cloud before import and ensure the customer's public endpoint can be resolved
+in IPAM.
+
+An incomplete regional list or an invalid gateway reference preserves the
+previous observation for that region and protocol. Other selected, complete
+regional lists still reconcile. The collector reports the failed scopes and
+returns an unsuccessful run.
 
 ### NAT gateway inventory
 

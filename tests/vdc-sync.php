@@ -52,8 +52,10 @@ function serveIonos(string $directory): void
                 'items' => array_map(static fn ($item) => ['id' => $item['id']], $embedded['items']),
             ]]];
         }
-        $status = $authenticated ? $response['status'] : 403;
-        $rows = ($query['offset'] ?? 0) > 0 ? [] : $response['items'];
+        $offset = (int) ($query['offset'] ?? 0);
+        $status = $authenticated ? ($offset > 0 ? ($response['pageTwoStatus'] ?? $response['status']) : $response['status']) : 403;
+        $rows = str_ends_with($path, '/networkloadbalancers') ? $response['items']
+            : array_slice($response['items'], $offset, isset($query['limit']) ? (int) $query['limit'] : null);
         $body = json_encode(isset($response['entities']) ? ['entities' => $response['entities']]
             : ['items' => $rows, 'totalCount' => count($response['items'])], JSON_THROW_ON_ERROR);
         fwrite($client, "HTTP/1.1 $status Fixture\r\nContent-Type: application/json\r\nConnection: close\r\nContent-Length: ".strlen($body)."\r\n\r\n".$body);
@@ -117,11 +119,11 @@ function manualIpLink(int $cloudId, int $objectId): int
 }
 
 /** Replace one endpoint between synchronous collection runs, retaining the other VDC's LAN response. */
-function setEndpoint(string $directory, string $path, array $items, int $status = 200): void
+function setEndpoint(string $directory, string $path, array $items, int $status = 200, ?int $pageTwoStatus = null): void
 {
     $file = "$directory/pages.json";
     $pages = is_file($file) ? json_decode(file_get_contents($file), true, flags: JSON_THROW_ON_ERROR) : [];
-    $pages[$path] = ['status' => $status, 'items' => $items];
+    $pages[$path] = ['status' => $status, 'items' => $items, 'pageTwoStatus' => $pageTwoStatus];
     file_put_contents($file, json_encode($pages, JSON_THROW_ON_ERROR));
 }
 
@@ -164,6 +166,11 @@ $itop = new Config($root.'conf/production/config-itop.php');
 verify($itop->Get('db_host') === 'test-db' && $itop->Get('db_name') === 'itop_test' && $itop->Get('db_user') === 'itop_test',
     'iTop is not connected to the disposable database.');
 require_once $root.'application/startup.inc.php';
+if (($argv[1] ?? '') === 'verify-nat-upgrade-snapshot') {
+    require_once __DIR__ . '/nat-upgrade.php';
+    verifyUpgradedNatSnapshot($argv[2]);
+    exit;
+}
 
 $admin = one("SELECT User WHERE login = 'admin'");
 $rest = one("SELECT URP_Profiles WHERE name = 'REST Services User'");
@@ -185,10 +192,14 @@ copy("$inputs/base/conf/params.distrib.xml", "$directory/conf/params.distrib.xml
 $copy = startService(['cp', '-R', "$inputs/module/.", "$directory/collectors"]);
 verify(proc_close($copy) === 0, 'Could not copy the collector package into the fixture.');
 $listOptions = ['offset' => true, 'depth' => 1];
-file_put_contents("$directory/collectors/resources.json", json_encode(['compute'=>['bases'=>['https://127.0.0.1:8443'],
+$fixturePlan = ['compute'=>['bases'=>['https://127.0.0.1:8443'],
     'resources'=>['/datacenters'=>$listOptions, '/datacenters/{datacenterId}/lans'=>$listOptions,
         '/datacenters/{datacenterId}/natgateways'=>['offset'=>false, 'depth'=>1],
-        '/datacenters/{datacenterId}/networkloadbalancers'=>$listOptions + ['verifyEmbedded' => 'networkloadbalancers']]]], JSON_THROW_ON_ERROR));
+        '/datacenters/{datacenterId}/networkloadbalancers'=>$listOptions + ['verifyEmbedded' => 'networkloadbalancers']]]];
+$fixturePlan['vpn'] = ['bases' => ['https://vpn.de-txl.localhost:8443'], 'resources' => [
+    '/ipsecgateways' => ['offset' => true], '/wireguardgateways' => ['offset' => true],
+]];
+file_put_contents("$directory/collectors/resources.json", json_encode($fixturePlan, JSON_THROW_ON_ERROR));
 $mode = trim(file_get_contents("$inputs/bridge-mode"));
 $genericOnly = in_array($mode, ['Generic', 'GenericBridge'], true);
 $modules = GetModulesInfo();
@@ -227,13 +238,14 @@ $xml = new SimpleXMLElement('<parameters/>');
 $xml->itop_url = 'http://127.0.0.1:8082';
 $xml->itop_login = 'admin';
 $xml->itop_password = getenv('ITOP_TEST_ADMIN_PASSWORD');
+$xml->ionos_products = 'compute';
 $xml->ionos_org_id = (string) $customer->GetKey();
 $xml->ionos_provider_id = (string) $provider->GetKey();
 $xml->asXML("$directory/conf/params.local.xml");
 putenv('IONOS_TOKEN='.bin2hex(random_bytes(24)));
 $cert = startService(['openssl', 'req', '-x509', '-newkey', 'rsa:2048', '-nodes',
     '-keyout', "$directory/key.pem", '-out', "$directory/cert.pem", '-subj', '/CN=127.0.0.1',
-    '-addext', 'subjectAltName=IP:127.0.0.1', '-days', '1']);
+    '-addext', 'subjectAltName=IP:127.0.0.1,DNS:vpn.de-txl.localhost', '-days', '1']);
 verify(proc_close($cert) === 0, 'Could not create ephemeral TLS identity.');
 $web = startService([PHP_BINARY, '-S', '127.0.0.1:8082', '-t', $root]);
 $ionos = startService([PHP_BINARY, __FILE__, 'serve-ionos', $directory]);
@@ -407,9 +419,16 @@ try {
         runCollector($directory, true);
         verify(ipLinks((int) $id) === $manual, 'A matching manual link must never become importer-owned.');
     }
+    if (is_dir(__DIR__ . '/nat-upgrade-inputs')) {
+        require_once __DIR__ . '/nat-upgrade.php';
+        verifyNatUpgrade($root, $directory, $uuid, (int) $id, (int) $lan->GetKey(), (int) $customer->GetKey(), $bridge, $modules);
+        return;
+    }
     verifyNatImport($directory, $uuid, (int) $id, (int) $lan->GetKey(), (int) $customer->GetKey(), $bridge);
     require_once __DIR__ . '/nlb-import.php';
     verifyNlbImport($directory, $uuid, (int) $id, (int) $lan->GetKey(), (int) $customer->GetKey(), $bridge);
+    require_once __DIR__ . '/vpn-import.php';
+    verifyVpnImport($directory, $uuid, (int) $id, (int) $otherCloud->GetKey(), (int) $customer->GetKey(), $bridge);
     echo 'VDC and LAN synchronization '.($bridge ? 'with' : 'without')." TeemIP: create, rename, scope and partial-read checks passed.\n";
 } finally {
     foreach ([$web, $ionos] as $service) {

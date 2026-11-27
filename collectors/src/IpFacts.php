@@ -20,13 +20,13 @@ final class IpFacts
     {
         $facts = [];
         foreach (['ip','ips','privateIps','publicIp','publicIps','ipv6Ips','listenerIp','cidr',
-            'lbPrivateIps','sourceIp','targetIp',
+            'lbPrivateIps','sourceIp','targetIp','gatewayIP','interfaceIPv4CIDR','interfaceIPv6CIDR',
             'sourceSubnet','targetSubnet','ipv6CidrBlock','ipv6CidrBlocks','ipv4CidrBlock'] as $field) {
             foreach ((array) ($attributes[$field] ?? []) as $value) {
                 self::add($facts,$field,$value);
             }
         }
-        foreach (['targets'=>['ip'],'lans'=>['gatewayIps'],'connections'=>['cidr']] as $section=>$fields) {
+        foreach (['targets'=>['ip'],'lans'=>['gatewayIps'],'connections'=>['cidr','ipv4CIDR','ipv6CIDR']] as $section=>$fields) {
             foreach ($attributes[$section] ?? [] as $entry) {
                 foreach ($fields as $field) {
                     foreach ((array) ($entry[$field] ?? []) as $value) {

@@ -66,7 +66,12 @@ final class Run
                 throw new InventoryError('vdc_endpoint_outside_selection');
             }
             $compute['resources'] = array_intersect_key($compute['resources'], array_flip($paths));
+            $vpn = $products['vpn'] ?? null;
             $products = ['compute' => $compute];
+            if ($vpn !== null) {
+                $vpn['resources'] = array_intersect_key($vpn['resources'], array_flip(['/ipsecgateways', '/wireguardgateways']));
+                $products['vpn'] = $vpn;
+            }
         }
         $pageSize = (int)($config['ionos_page_size'] ?? 100);
         $timeout = (int)($config['ionos_timeout'] ?? 20);

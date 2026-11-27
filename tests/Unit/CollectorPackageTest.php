@@ -66,6 +66,7 @@ final class CollectorPackageTest extends TestCase
             self::assertSame([
                 'BRIonosVdcCollector' => 1, 'BRIonosLanCollector' => 2, 'BRIonosNatIpv4Collector' => 7,
                 'BRIonosNatIpv6Collector' => 8, 'BRIonosNatGatewayCollector' => 22, 'BRIonosNlbCollector' => 23,
+                'BRIonosVpnCollector' => 24,
             ], $ranks);
             $settings[$path] = array_keys((array) $template);
             foreach (['itop_login', 'itop_password', 'itop_token'] as $key) {

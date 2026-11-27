@@ -23,16 +23,21 @@ final class LinkRestClient extends RestClient
     private static function inventoryQuery(string $class, array $key): string
     {
         $allowed = ['id', 'org_id', 'cloud_id', 'provider_resource_id', 'nat_gateway_id', 'cloud_lan_id',
-            'attachment_id', 'address', 'ionos_source_key', 'ipaddress_id', 'ionos_synced_ip_id', 'load_balancer_id'];
+            'attachment_id', 'address', 'ionos_source_key', 'ipaddress_id', 'ionos_synced_ip_id', 'load_balancer_id',
+            'source_namespace', 'vpn_gateway_id', 'public_endpoint_id'];
         if (!in_array($class, ['CloudNatGateway', 'CloudNatGatewayLan', 'CloudNatGatewayLanAddress',
             'CloudNatGatewayPublicAddress', 'CloudNetworkLoadBalancer', 'CloudNetworkLoadBalancerListenerAddress',
-            'CloudNetworkLoadBalancerBackendAddress'], true) || !isset($key['id'], $key['ionos_source_key'])
-            || !preg_match('/^IONOS (?:NAT|NLB) - org [0-9]+ - provider [0-9]+(?: - contract [0-9]+)?$/D', $key['ionos_source_key'])) {
+            'CloudNetworkLoadBalancerBackendAddress', 'CloudVpnGateway', 'CloudVpnGatewayLan',
+            'CloudVpnGatewayLanAddress', 'CloudVpnGatewayInterfaceAddress'], true)
+            || !isset($key['id'], $key['ionos_source_key'])
+            || !preg_match('~^IONOS (?:(?:NAT|NLB) - org [0-9]+ - provider [0-9]+(?: - contract [0-9]+)?'
+                . '|VPN - org [0-9]+ - provider [0-9]+(?: - contract [0-9]+)? - [a-z]{2}-[a-z]{3}/(?:ipsec|wireguard))$~D',
+                $key['ionos_source_key'])) {
             throw new RuntimeException('Invalid IONOS network inventory key.');
         }
         $conditions = [];
         foreach ($key as $field => $value) {
-            if (!in_array($field, $allowed, true) || !preg_match('/^[a-zA-Z0-9:. -]+$/D', (string) $value)) {
+            if (!in_array($field, $allowed, true) || !preg_match('~^[a-zA-Z0-9:._ /-]+$~D', (string) $value)) {
                 throw new RuntimeException('Invalid network inventory identity.');
             }
             $conditions[] = "$field = '$value'";

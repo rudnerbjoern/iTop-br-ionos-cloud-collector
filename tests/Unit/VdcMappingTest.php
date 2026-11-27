@@ -34,7 +34,7 @@ final class VdcMappingTest extends TestCase
     ];
 
     /** @return array<string,mixed> A single native module installation record. */
-    private static function module(string $name, string $version = '0.2.0'): array
+    private static function module(string $name, string $version = '0.3.0'): array
     {
         return ['code' => 0, 'class' => 'ModuleInstallation', 'fields' => [
             'name' => $name, 'version' => $version, 'installed' => '2026-11-26 07:15:00',

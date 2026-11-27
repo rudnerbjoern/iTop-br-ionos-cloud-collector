@@ -52,6 +52,9 @@ final class NatGatewayCollector extends InventoryPhaseCollector {}
 /** Import network load balancers after their Cloud and LANs are available. */
 final class NlbCollector extends InventoryPhaseCollector {}
 
+/** Reconcile selected regional VPN lists after Cloud and LAN synchronization. */
+final class VpnCollector extends InventoryPhaseCollector {}
+
 /** Use the Base sequence sorter and enforce the dependencies of each enabled IONOS phase. */
 final class IonosCollectionPlan extends CollectionPlan
 {
@@ -60,6 +63,8 @@ final class IonosCollectionPlan extends CollectionPlan
 
     /** Whether the target has the IPv6 management module. */
     public static bool $useIpv6;
+
+    public static bool $useVpn = false;
 
     /** Register each enabled collector at its requested position after its dependencies. */
     public function AddCollectorsToOrchestrator(): bool
@@ -71,6 +76,7 @@ final class IonosCollectionPlan extends CollectionPlan
             'BRIonosNatIpv6Collector' => NatIpv6Collector::class,
             'BRIonosNatGatewayCollector' => NatGatewayCollector::class,
             'BRIonosNlbCollector' => NlbCollector::class,
+            'BRIonosVpnCollector' => VpnCollector::class,
         ];
         $dependencies = [
             'BRIonosVdcCollector' => [],
@@ -79,6 +85,7 @@ final class IonosCollectionPlan extends CollectionPlan
             'BRIonosNatIpv6Collector' => ['BRIonosVdcCollector'],
             'BRIonosNatGatewayCollector' => ['BRIonosLanCollector'],
             'BRIonosNlbCollector' => ['BRIonosLanCollector'],
+            'BRIonosVpnCollector' => ['BRIonosLanCollector'],
         ];
         if (self::$useIpam) {
             $dependencies['BRIonosNatGatewayCollector'][] = 'BRIonosNatIpv4Collector';
@@ -93,7 +100,8 @@ final class IonosCollectionPlan extends CollectionPlan
                 || !ctype_digit((string) $entry['rank'])) {
                 throw new RuntimeException('Invalid entry in collectors_launch_sequence.');
             }
-            if ($entry['enable'] === 'no' || ($name === 'BRIonosNatIpv4Collector' && !self::$useIpam)
+            if ($entry['enable'] === 'no' || ($name === 'BRIonosVpnCollector' && !self::$useVpn)
+                || ($name === 'BRIonosNatIpv4Collector' && !self::$useIpam)
                 || ($name === 'BRIonosNatIpv6Collector' && !(self::$useIpam && self::$useIpv6))) {
                 continue;
             }

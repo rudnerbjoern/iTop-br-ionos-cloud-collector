@@ -19,6 +19,8 @@ final class InventoryReconciler
         private readonly array $model,
         private readonly bool $ipam,
         private readonly array $placementFields = [],
+        private readonly array $rootScope = [],
+        private readonly ?string $rootManagedIp = null,
     ) {}
 
     /** Upsert all desired rows before withdrawing any stale, source-owned records. */
@@ -46,7 +48,8 @@ final class InventoryReconciler
         }
         $selected = [$identity, 'ionos_source_key', ...$fields];
         $existing = [];
-        foreach ($this->store->rows($class, [$parentField => $parent], $selected) as $row) {
+        $scope = [$parentField => $parent] + ($class === $this->root ? $this->rootScope : []);
+        foreach ($this->store->rows($class, $scope, $selected) as $row) {
             $value = $row[$identity];
             if ($identity === 'address' && is_string($value) && filter_var($value, FILTER_VALIDATE_IP)) {
                 $value = inet_ntop(inet_pton($value));
@@ -59,6 +62,7 @@ final class InventoryReconciler
             $existing[$value] = $row;
         }
         foreach ($wanted + $existing as $value => $_node) {
+            $protectRoot = false;
             $node = $wanted[$value] ?? null;
             $row = $existing[$value] ?? null;
             $fields = $node['fields'] ?? [];
@@ -66,7 +70,7 @@ final class InventoryReconciler
                 if ($ipam) {
                     $fields['ionos_synced_ip_id'] = $value;
                 }
-                $id = $this->store->insert($class, [$parentField => $parent, $identity => $value,
+                $id = $this->store->insert($class, $scope + [$identity => $value,
                     'ionos_source_key' => $this->source] + $fields);
             } else {
                 $id = $row['id'];
@@ -77,10 +81,20 @@ final class InventoryReconciler
                     continue;
                 }
                 $owned = $row['ionos_source_key'] === $this->source;
-                $key = ['id' => $id, $parentField => $parent, $identity => $row[$identity],
+                $key = $scope + ['id' => $id, $identity => $row[$identity],
                     'ionos_source_key' => $this->source];
                 if ($class === $this->root) {
                     $key['org_id'] = $org;
+                    if ($this->rootManagedIp !== null) {
+                        $ref = $this->rootManagedIp;
+                        if ((int) $row[$ref] !== (int) $row['ionos_synced_ip_id']) {
+                            // A user changed the endpoint; retain it if the gateway is withdrawn.
+                            unset($fields[$ref], $fields['ionos_synced_ip_id']);
+                            $protectRoot = true;
+                        }
+                        $key[$ref] = (int) $row[$ref];
+                        $key['ionos_synced_ip_id'] = (int) $row['ionos_synced_ip_id'];
+                    }
                 }
                 if ($class === $this->root && !$owned && $node !== null) {
                     foreach ($this->placementFields as $field) {
@@ -106,7 +120,7 @@ final class InventoryReconciler
             foreach ($children as $child) {
                 $this->collection($child, $id, $node['children'][$child] ?? [], $removals);
             }
-            if ($node === null && $owned) {
+            if ($node === null && $owned && !$protectRoot) {
                 $removals[] = [$class, $key];
             }
         }
