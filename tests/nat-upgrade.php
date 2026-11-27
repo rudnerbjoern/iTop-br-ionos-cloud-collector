@@ -74,6 +74,14 @@ function verifyNatUpgrade(string $root, string $directory, string $uuid, int $cl
         natFixtureObject('IPv4Subnet', ['org_id' => $org, 'name' => 'NAT upgrade public subnet',
             'ip' => '203.0.113.0', 'mask' => '255.255.255.0', 'block_id' => $publicBlock]);
     }
+    // Start the baseline import with complete compute data after the preceding negative tests.
+    setPage($directory, $uuid, 'NAT upgrade VDC', false, 200, null);
+    setLan($directory, $uuid, 'Renamed LAN', true);
+    setLan($directory, SECOND_VDC, null, true);
+    setEndpoint($directory, "/datacenters/".SECOND_VDC."/natgateways", []);
+    foreach ([$uuid, SECOND_VDC] as $vdc) {
+        setEndpoint($directory, "/datacenters/$vdc/networkloadbalancers", []);
+    }
     setEndpoint($directory, "/datacenters/$uuid/natgateways", [
         ['id' => NAT_UPGRADE_GATEWAY, 'properties' => ['name' => 'NAT upgrade fixture', 'publicIps' => ['203.0.113.10'],
             'lans' => [['id' => 1, 'gatewayIps' => ['192.0.2.33/24']]]]],
@@ -85,6 +93,7 @@ function verifyNatUpgrade(string $root, string $directory, string $uuid, int $cl
     $snapshot = "$directory/nat-upgrade-snapshot.json";
     verify(file_put_contents($snapshot, json_encode(['cloud' => $cloud, 'bridge' => $bridge, 'rows' => $rows],
         JSON_THROW_ON_ERROR)) !== false, 'Cannot store the baseline NAT assertions.');
+    echo 'Baseline NAT import and ownership snapshot passed.'.PHP_EOL;
 
     foreach (['br-cloud-datamodel', 'br-cloud-datamodel-bridge-for-teemip', 'br-ionos-cloud-datamodel'] as $module) {
         $copy = startService(['cp', '-R', "$input/$module/.", $root."extensions/$module"]);
@@ -101,6 +110,7 @@ function verifyNatUpgrade(string $root, string $directory, string $uuid, int $cl
         $selected->addChild('item', $module);
     }
     $parameters->addChild('selected_extensions')->addAttribute('type', 'array');
+    $parameters->optional_steps->{'log-parameters'} = '0';
     $parameters->sample_data = '0';
     $parameters->previous_configuration_file = $root.'conf/production/config-itop.php';
     $parameters->target_env = 'production';
@@ -109,8 +119,11 @@ function verifyNatUpgrade(string $root, string $directory, string $uuid, int $cl
     $process = proc_open([PHP_BINARY, $setup.'unattended-install.php', '--param-file='.$file, '--use_itop_config'], [
         0 => ['file', '/dev/null', 'r'], 1 => ['file', "$directory/setup.log", 'w'], 2 => ['redirect', 1],
     ], $pipes, $root);
-    verify(is_resource($process) && proc_close($process) === 0, 'iTop Setup upgrade failed.');
+    verify(is_resource($process), 'Could not start the iTop Setup upgrade.');
+    $status = proc_close($process);
+    verify($status === 0, "iTop Setup upgrade exited with status $status.");
     assertNatInFreshProcess($snapshot);
+    echo 'iTop Setup upgrade and post-Setup NAT snapshot passed.'.PHP_EOL;
 
     $plan = file_get_contents("$directory/collectors/resources.json");
     $copy = startService(['cp', '-R', "$input/collectors/.", "$directory/collectors"]);
