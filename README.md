@@ -7,6 +7,7 @@ The inventory phase works independently of iTop.
 
 - [Shared cloud inventory architecture](https://github.com/rudnerbjoern/iTop-br-cloud-datamodel/blob/main/docs/architecture/README.md)
 - [Resource catalog and iTop mappings](docs/resource-catalog.md)
+- [Modeling backlog and acceptance criteria](docs/modeling-backlog.md)
 - [Design and synchronization contract](docs/design.md)
 - [Offline checks](tests/README.md) and [Collector Base integration test](tests/base-integration.md)
 
