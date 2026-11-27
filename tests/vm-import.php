@@ -59,12 +59,17 @@ function nativeFixtureVmRow(int $sourceId, int $vm, string $name, bool $execute)
         CURLOPT_POSTFIELDS => http_build_query([
             'auth_user' => 'admin', 'auth_pwd' => getenv('ITOP_TEST_ADMIN_PASSWORD'),
             'data_source_id' => $sourceId, 'csvdata' => "primary_key;name\n$vm;$name\n",
-            'output' => 'retcode', 'synchronize' => $execute ? '1' : '0',
+            'output' => $execute ? 'summary' : 'retcode', 'synchronize' => $execute ? '1' : '0',
         ]),
     ]);
     $result = curl_exec($request);
-    $lines = is_string($result) ? explode("\n", trim(strip_tags($result))) : [];
-    verify(curl_getinfo($request, CURLINFO_RESPONSE_CODE) === 200 && array_pop($lines) === '0',
+    $output = is_string($result) ? trim(strip_tags($result)) : '';
+    $accepted = $execute
+        ? str_contains($output, '#Created (before synchro): 1')
+            && str_contains($output, '#Objects reconciliation errors: 0')
+            && str_contains($output, '#Objects created: 0')
+        : $output === '0';
+    verify(curl_getinfo($request, CURLINFO_RESPONSE_CODE) === 200 && $accepted,
         'The native fixture import did not accept the synthetic VM row.');
 }
 
